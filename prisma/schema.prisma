@@ -1,0 +1,111 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  password           String
+  name               String?
+  twoFactorSecret    String?
+  twoFactorEnabled   Boolean  @default(false)
+  twoFactorVerified  Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  assets             Asset[]
+  portfolioSnapshots PortfolioSnapshot[]
+  transactions       Transaction[]
+  goals              Goal[]
+  loginAttempts      LoginAttempt[]
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Asset {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  type        String
+  institution String?
+  value       Float
+  currency    String    @default("EUR")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings Holding[]
+}
+
+model Holding {
+  id          String   @id @default(cuid())
+  assetId     String
+  symbol      String
+  name        String
+  quantity    Float
+  avgBuyPrice Float
+  currency    String   @default("EUR")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  asset        Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  holdingId String?
+  type      String
+  symbol    String?
+  quantity  Float?
+  price     Float
+  fees      Float    @default(0)
+  currency  String   @default("EUR")
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holding Holding? @relation(fields: [holdingId], references: [id])
+}
+
+model PortfolioSnapshot {
+  id         String   @id @default(cuid())
+  userId     String
+  totalValue Float
+  breakdown  String
+  date       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  targetValue Float
+  currency    String    @default("EUR")
+  targetDate  DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

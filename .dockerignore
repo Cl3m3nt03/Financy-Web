@@ -1,0 +1,14 @@
+node_modules
+.next
+*.db
+*.db-journal
+.env
+.env.local
+.git
+.gitignore
+README.md
+Dockerfile
+docker-compose.yml
+fly.toml
+prisma/seed.ts
+prisma/seed.js

@@ -1,0 +1,93 @@
+1. Installer flyctl
+
+  Windows (PowerShell) :
+  iwr https://fly.io/install.ps1 -useb | iex
+
+  Linux/Mac :
+  curl -L https://fly.io/install.sh | sh
+
+  ---
+  2. Créer un compte + activer la 2FA
+
+  fly auth signup    # ou fly auth login si tu as déjà un compte
+
+  Active la 2FA sur https://fly.io/user/settings → Two-factor Authentication → utilise Google
+  Authenticator.
+
+  ---
+  3. Créer l'app + la base PostgreSQL
+
+  cd /mnt/c/Users/cleme/Desktop/Workspace/Personal_project/finance-clement
+
+  # Créer l'app (Fly va suggérer un nom dispo, ex: wealth-tracker-violet-fog-123)
+  fly apps create
+
+  # Créer la base PostgreSQL gratuite (région Paris)
+  fly postgres create \
+    --name wealth-tracker-db \
+    --region cdg \
+    --initial-cluster-size 1 \
+    --vm-size shared-cpu-1x \
+    --volume-size 1
+
+  # Attacher la DB → injecte DATABASE_URL automatiquement
+  fly postgres attach wealth-tracker-db
+
+  ---
+  4. Injecter les secrets
+
+  # Remplace TON_NOM_APP par le nom donné par Fly
+  fly secrets set \
+    NEXTAUTH_SECRET="$(openssl rand -base64 32)" \
+    NEXTAUTH_URL="https://TON_NOM_APP.fly.dev" \
+    ALPHA_VANTAGE_API_KEY="TRHF3FGKXXMEJFRJ" \
+    COINGECKO_API_KEY="CG-EA9cCQpaYWHBDh3BL2p6tF8C"
+
+  ---
+  5. Déployer
+
+  fly deploy
+
+  Fly build le Docker, pousse l'image, lance le container. prisma db push tourne automatiquement au
+  démarrage.
+
+  ---
+  6. Ouvrir l'app
+
+  fly open                    # ouvre le navigateur
+  fly logs                    # voir les logs en temps réel
+  fly status                  # état des machines
+
+  ---
+  Commandes utiles après déploiement
+
+  # Redéployer après une modif
+  fly deploy
+
+  # Voir les logs
+  fly logs -a TON_NOM_APP
+
+  # Accès direct à la DB Postgres
+  fly postgres connect -a wealth-tracker-db
+
+  # Créer le compte démo en prod
+  fly ssh console
+  node node_modules/.bin/node prisma/seed.js
+
+  ---
+  Résumé de ce qui tourne gratuitement
+
+  ┌──────────────────────────┬──────────────────────────────────────┬──────────┐
+  │         Service          │              Ressource               │   Coût   │
+  ├──────────────────────────┼──────────────────────────────────────┼──────────┤
+  │ App Next.js              │ 1 VM shared, 512MB RAM, région Paris │ 0 €      │
+  ├──────────────────────────┼──────────────────────────────────────┼──────────┤
+  │ PostgreSQL               │ 1 VM shared, 1GB stockage            │ 0 €      │
+  ├──────────────────────────┼──────────────────────────────────────┼──────────┤
+  │ HTTPS + domaine .fly.dev │ Inclus                               │ 0 €      │
+  ├──────────────────────────┼──────────────────────────────────────┼──────────┤
+  │ Total                    │                                      │ 0 €/mois │
+  └──────────────────────────┴──────────────────────────────────────┴──────────┘
+
+  Si tu veux ton propre domaine (monsite.com) → fly certs add monsite.com puis configure un CNAME chez
+   ton registrar. Gratuit aussi
