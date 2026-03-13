@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
 import { rateLimit } from '@/lib/rate-limit'
+import { generateTotpSecret, generateQRCode } from '@/lib/totp'
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Nom requis').max(100).trim(),
@@ -21,7 +22,6 @@ export async function POST(req: NextRequest) {
     req.headers.get('x-real-ip') ??
     'unknown'
 
-  // 5 inscriptions max par heure par IP
   const rl = rateLimit(`register:${ip}`, 5, 60 * 60 * 1000)
   if (!rl.success) {
     return NextResponse.json(
@@ -48,10 +48,18 @@ export async function POST(req: NextRequest) {
   }
 
   const hashed = await bcrypt.hash(parsed.data.password, 12)
-  const user = await prisma.user.create({
-    data: { name: parsed.data.name, email, password: hashed },
-    select: { id: true, email: true, name: true },
+  const secret = generateTotpSecret()
+  const qrCode = await generateQRCode(email, secret)
+
+  await prisma.user.create({
+    data: {
+      name: parsed.data.name,
+      email,
+      password: hashed,
+      twoFactorSecret: secret,
+      twoFactorEnabled: false,
+    },
   })
 
-  return NextResponse.json(user, { status: 201 })
+  return NextResponse.json({ qrCode }, { status: 201 })
 }

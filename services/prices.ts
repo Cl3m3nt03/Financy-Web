@@ -1,25 +1,32 @@
 import { PriceData } from '@/types'
 import { MOCK_PRICES } from './mock-data'
 
-const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_API_KEY
 const COINGECKO_KEY = process.env.COINGECKO_API_KEY
 
+// ── Stocks & ETFs via Yahoo Finance (gratuit, sans limite) ───────────────────
 export async function getStockPrice(symbol: string): Promise<PriceData | null> {
-  if (!ALPHA_VANTAGE_KEY) {
-    return MOCK_PRICES.find(p => p.symbol === symbol) ?? null
-  }
-
   try {
-    const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${ALPHA_VANTAGE_KEY}`
-    const res = await fetch(url, { next: { revalidate: 300 } })
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible)',
+          'Accept': 'application/json',
+        },
+        next: { revalidate: 60 },
+      }
+    )
+
+    if (!res.ok) return MOCK_PRICES.find(p => p.symbol === symbol) ?? null
+
     const data = await res.json()
-    const quote = data['Global Quote']
+    const meta = data?.chart?.result?.[0]?.meta
+    if (!meta?.regularMarketPrice) return null
 
-    if (!quote || !quote['05. price']) return null
-
-    const price = parseFloat(quote['05. price'])
-    const change = parseFloat(quote['09. change'])
-    const changePercent = parseFloat(quote['10. change percent'].replace('%', ''))
+    const price: number = meta.regularMarketPrice
+    const prevClose: number = meta.chartPreviousClose ?? meta.previousClose ?? price
+    const change = price - prevClose
+    const changePercent = prevClose ? (change / prevClose) * 100 : 0
 
     return { symbol, price, change24h: change, changePercent24h: changePercent }
   } catch {
@@ -27,9 +34,10 @@ export async function getStockPrice(symbol: string): Promise<PriceData | null> {
   }
 }
 
+// ── Crypto via CoinGecko ─────────────────────────────────────────────────────
 export async function getCryptoPrice(coinId: string): Promise<PriceData | null> {
   try {
-    const headers: Record<string, string> = { 'Accept': 'application/json' }
+    const headers: Record<string, string> = { Accept: 'application/json' }
     if (COINGECKO_KEY) headers['x-cg-demo-api-key'] = COINGECKO_KEY
 
     const res = await fetch(
@@ -38,17 +46,19 @@ export async function getCryptoPrice(coinId: string): Promise<PriceData | null> 
     )
     const data = await res.json()
     const coinData = data[coinId]
-
     if (!coinData) return null
 
-    const price = coinData.eur
-    const changePercent = coinData.eur_24h_change
+    const price: number = coinData.eur
+    const changePercent: number = coinData.eur_24h_change
     const change = (price * changePercent) / 100
 
     const symbolMap: Record<string, string> = {
       bitcoin: 'BTC',
       ethereum: 'ETH',
       solana: 'SOL',
+      binancecoin: 'BNB',
+      cardano: 'ADA',
+      ripple: 'XRP',
     }
 
     return {
@@ -69,6 +79,10 @@ const COIN_IDS: Record<string, string> = {
   BNB: 'binancecoin',
   ADA: 'cardano',
   XRP: 'ripple',
+  MATIC: 'matic-network',
+  DOT: 'polkadot',
+  AVAX: 'avalanche-2',
+  LINK: 'chainlink',
 }
 
 export function getCoinId(symbol: string): string {

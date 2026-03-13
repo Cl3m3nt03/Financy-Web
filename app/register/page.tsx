@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { TrendingUp, Eye, EyeOff, AlertCircle, Check, User } from 'lucide-react'
+import Image from 'next/image'
+import { TrendingUp, Eye, EyeOff, AlertCircle, Check, User, Shield, Smartphone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PasswordStrength {
@@ -26,15 +27,20 @@ function getPasswordStrength(password: string): PasswordStrength {
     { label: '',          barColor: 'bg-zinc-700',    textColor: '' },
     { label: 'Faible',    barColor: 'bg-red-500',     textColor: 'text-red-400' },
     { label: 'Moyen',     barColor: 'bg-amber-500',   textColor: 'text-amber-400' },
-    { label: 'Bon',       barColor: 'bg-accent',       textColor: 'text-amber-400' },
+    { label: 'Bon',       barColor: 'bg-accent',      textColor: 'text-amber-400' },
     { label: 'Excellent', barColor: 'bg-emerald-500', textColor: 'text-emerald-400' },
   ]
   return { score, ...levels[Math.min(score, 4)] }
 }
 
+type Step = 'form' | 'qr'
+
 export default function RegisterPage() {
   const router = useRouter()
+  const [step, setStep] = useState<Step>('form')
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
+  const [qrCode, setQrCode] = useState('')
+  const [totpCode, setTotpCode] = useState('')
   const [showPwd, setShowPwd]     = useState(false)
   const [error, setError]         = useState('')
   const [loading, setLoading]     = useState(false)
@@ -47,7 +53,7 @@ export default function RegisterPage() {
     { ok: form.password === form.confirm && form.confirm.length > 0, label: 'Mots de passe identiques' },
   ]
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
 
@@ -58,38 +64,58 @@ export default function RegisterPage() {
 
     setLoading(true)
 
-    // Création du compte
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-      }),
+      body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),
     })
 
+    const data = await res.json()
+    setLoading(false)
+
     if (!res.ok) {
-      const data = await res.json()
       setError(data.error ?? 'Une erreur est survenue.')
+      return
+    }
+
+    setQrCode(data.qrCode)
+    setStep('qr')
+  }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    const res = await fetch('/api/auth/register/verify-2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.email, code: totpCode }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error ?? 'Code incorrect.')
       setLoading(false)
       return
     }
 
-    // Connexion automatique après inscription
+    // Auto-login avec 2FA
     const result = await signIn('credentials', {
       email: form.email,
       password: form.password,
+      totpCode,
       redirect: false,
     })
 
     setLoading(false)
 
-    if (result?.error) {
+    if (!result?.error) {
+      router.push('/dashboard')
+    } else {
       setError('Compte créé, mais la connexion a échoué. Connectez-vous manuellement.')
       router.push('/login')
-    } else {
-      router.push('/dashboard')
     }
   }
 
@@ -105,153 +131,207 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-surface border border-border rounded-2xl p-8">
-          <h1 className="text-xl font-semibold text-text-primary mb-1">Créer un compte</h1>
-          <p className="text-text-secondary text-sm mb-8">
-            Commencez à suivre votre patrimoine gratuitement.
-          </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Nom */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Prénom / Nom
-              </label>
-              <div className="relative">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full bg-surface-2 border border-border rounded-xl pl-10 pr-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-                  placeholder="Jean Dupont"
-                  required
-                  autoComplete="name"
-                />
-              </div>
-            </div>
+          {/* ── Étape 1 : Formulaire ──────────────────────────────────── */}
+          {step === 'form' && (
+            <>
+              <h1 className="text-xl font-semibold text-text-primary mb-1">Créer un compte</h1>
+              <p className="text-text-secondary text-sm mb-8">
+                La 2FA sera configurée directement à l&apos;inscription.
+              </p>
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Adresse email
-              </label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-                placeholder="vous@exemple.com"
-                required
-                autoComplete="email"
-              />
-            </div>
-
-            {/* Mot de passe */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <input
-                  type={showPwd ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 pr-12 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-                  placeholder="••••••••"
-                  required
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPwd(!showPwd)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
-                >
-                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-
-              {/* Barre de force */}
-              {form.password.length > 0 && (
-                <div className="mt-2 space-y-2">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4].map(i => (
-                      <div
-                        key={i}
-                        className={cn(
-                          'h-1 flex-1 rounded-full transition-all',
-                          strength.score >= i ? strength.barColor : 'bg-zinc-700'
-                        )}
-                      />
-                    ))}
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Prénom / Nom</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      className="w-full bg-surface-2 border border-border rounded-xl pl-10 pr-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                      placeholder="Jean Dupont"
+                      required
+                      autoComplete="name"
+                    />
                   </div>
-                  {strength.label && (
-                    <p className={cn('text-xs font-medium', strength.textColor)}>
-                      Force : {strength.label}
-                    </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Adresse email</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                    placeholder="vous@exemple.com"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Mot de passe</label>
+                  <div className="relative">
+                    <input
+                      type={showPwd ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                      className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 pr-12 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                      placeholder="••••••••"
+                      required
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPwd(!showPwd)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary"
+                    >
+                      {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {form.password.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4].map(i => (
+                          <div
+                            key={i}
+                            className={cn('h-1 flex-1 rounded-full transition-all', strength.score >= i ? strength.barColor : 'bg-zinc-700')}
+                          />
+                        ))}
+                      </div>
+                      {strength.label && (
+                        <p className={cn('text-xs font-medium', strength.textColor)}>Force : {strength.label}</p>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* Confirmation */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Confirmer le mot de passe
-              </label>
-              <input
-                type={showPwd ? 'text' : 'password'}
-                value={form.confirm}
-                onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}
-                className={cn(
-                  'w-full bg-surface-2 border rounded-xl px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none transition-colors',
-                  form.confirm.length > 0
-                    ? form.confirm === form.password
-                      ? 'border-emerald-500/50 focus:border-emerald-500'
-                      : 'border-red-500/50 focus:border-red-500'
-                    : 'border-border focus:border-accent'
-                )}
-                placeholder="••••••••"
-                required
-                autoComplete="new-password"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">Confirmer le mot de passe</label>
+                  <input
+                    type={showPwd ? 'text' : 'password'}
+                    value={form.confirm}
+                    onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}
+                    className={cn(
+                      'w-full bg-surface-2 border rounded-xl px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none transition-colors',
+                      form.confirm.length > 0
+                        ? form.confirm === form.password
+                          ? 'border-emerald-500/50 focus:border-emerald-500'
+                          : 'border-red-500/50 focus:border-red-500'
+                        : 'border-border focus:border-accent'
+                    )}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="new-password"
+                  />
+                </div>
 
-            {/* Règles mot de passe */}
-            {(form.password.length > 0 || form.confirm.length > 0) && (
-              <div className="grid grid-cols-2 gap-1.5">
-                {rules.map((rule, i) => (
-                  <div key={i} className={cn('flex items-center gap-1.5 text-xs', rule.ok ? 'text-emerald-400' : 'text-text-muted')}>
-                    <Check className={cn('w-3 h-3 shrink-0', rule.ok ? 'opacity-100' : 'opacity-30')} />
-                    {rule.label}
+                {(form.password.length > 0 || form.confirm.length > 0) && (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {rules.map((rule, i) => (
+                      <div key={i} className={cn('flex items-center gap-1.5 text-xs', rule.ok ? 'text-emerald-400' : 'text-text-muted')}>
+                        <Check className={cn('w-3 h-3 shrink-0', rule.ok ? 'opacity-100' : 'opacity-30')} />
+                        {rule.label}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {error && (
+                  <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || rules.some(r => !r.ok)}
+                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors mt-2"
+                >
+                  {loading ? 'Création...' : 'Continuer →'}
+                </button>
+              </form>
+
+              <div className="mt-6 pt-6 border-t border-border text-center">
+                <p className="text-text-muted text-sm">
+                  Déjà un compte ?{' '}
+                  <Link href="/login" className="text-accent hover:underline font-medium">Se connecter</Link>
+                </p>
               </div>
-            )}
+            </>
+          )}
 
-            {error && (
-              <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {error}
+          {/* ── Étape 2 : QR code + vérification ─────────────────────── */}
+          {step === 'qr' && (
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+                  <Shield className="w-5 h-5 text-accent" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold text-text-primary">Configurer la 2FA</h1>
+                  <p className="text-text-secondary text-xs">Sécurisez votre compte dès maintenant</p>
+                </div>
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading || rules.some(r => !r.ok)}
-              className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors mt-2"
-            >
-              {loading ? 'Création du compte...' : 'Créer mon compte'}
-            </button>
-          </form>
+              <div className="space-y-5">
+                {/* Instructions */}
+                <div className="bg-surface-2 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-text-secondary">
+                    <Smartphone className="w-4 h-4 text-accent shrink-0" />
+                    <span>Ouvrez <strong className="text-text-primary">Google Authenticator</strong> ou <strong className="text-text-primary">Authy</strong></span>
+                  </div>
+                  <p className="text-text-muted text-xs pl-6">Scannez le QR code ci-dessous pour ajouter votre compte.</p>
+                </div>
 
-          <div className="mt-6 pt-6 border-t border-border text-center">
-            <p className="text-text-muted text-sm">
-              Déjà un compte ?{' '}
-              <Link href="/login" className="text-accent hover:underline font-medium">
-                Se connecter
-              </Link>
-            </p>
-          </div>
+                {/* QR Code */}
+                {qrCode && (
+                  <div className="flex justify-center">
+                    <div className="bg-white p-3 rounded-xl">
+                      <Image src={qrCode} alt="QR Code 2FA" width={160} height={160} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Saisie du code */}
+                <form onSubmit={handleVerify} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-2">
+                      Code à 6 chiffres
+                    </label>
+                    <input
+                      type="text"
+                      value={totpCode}
+                      onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-text-primary text-center text-2xl font-mono tracking-widest placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                      placeholder="000000"
+                      maxLength={6}
+                      autoFocus
+                      required
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading || totpCode.length < 6}
+                    className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors"
+                  >
+                    {loading ? 'Vérification...' : 'Activer et se connecter'}
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+
         </div>
       </div>
     </div>
