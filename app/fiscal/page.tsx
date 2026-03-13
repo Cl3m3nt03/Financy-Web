@@ -43,16 +43,17 @@ export default function FiscalPage() {
 
         {/* Year selector + export */}
         <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-text-secondary text-sm">Année fiscale</span>
-          <div className="flex gap-1.5">
-            {years.map(y => (
-              <button key={y} onClick={() => setYear(y)}
-                className={cn('px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors border',
-                  year === y ? 'bg-accent/10 border-accent text-accent' : 'border-border text-text-muted hover:text-text-primary hover:border-accent/40')}>
-                {y}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <span className="text-text-secondary text-sm">Année fiscale</span>
+            <div className="flex gap-1.5">
+              {years.map(y => (
+                <button key={y} onClick={() => setYear(y)}
+                  className={cn('px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors border',
+                    year === y ? 'bg-accent/10 border-accent text-accent' : 'border-border text-text-muted hover:text-text-primary hover:border-accent/40')}>
+                  {y}
+                </button>
+              ))}
+            </div>
           </div>
           <button onClick={() => window.print()}
             className="flex items-center gap-2 border border-border hover:border-accent/50 text-text-secondary hover:text-accent px-4 py-2 rounded-xl text-sm font-medium transition-colors print:hidden">
