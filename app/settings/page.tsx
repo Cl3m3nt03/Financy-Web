@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Key, Database, Shield, Lock, Eye, EyeOff, Check, AlertCircle, Loader2, QrCode } from 'lucide-react'
+import { Key, Database, Shield, Lock, Eye, EyeOff, Check, AlertCircle, Loader2, Mail } from 'lucide-react'
 
 export default function SettingsPage() {
   const { data: session } = useSession()
@@ -17,9 +17,8 @@ export default function SettingsPage() {
   const [showPw, setShowPw]     = useState(false)
 
   // 2FA state
-  const [tfaStep, setTfaStep]   = useState<'idle' | 'setup' | 'verify' | 'disable'>('idle')
+  const [tfaStep, setTfaStep]   = useState<'idle' | 'setup' | 'disable'>('idle')
   const [tfaEnabled, setTfaEnabled] = useState(false)
-  const [qrCode, setQrCode]     = useState('')
   const [tfaCode, setTfaCode]   = useState('')
   const [tfaLoading, setTfaLoading] = useState(false)
   const [tfaError, setTfaError] = useState('')
@@ -54,12 +53,7 @@ export default function SettingsPage() {
     setTfaError('')
     const res = await fetch('/api/auth/2fa/setup', { method: 'POST' })
     setTfaLoading(false)
-    if (!res.ok) {
-      setTfaError('Erreur lors de la configuration.')
-      return
-    }
-    const data = await res.json()
-    setQrCode(data.qrCode)
+    if (!res.ok) { setTfaError('Erreur lors de l\'envoi. Réessayez.'); return }
     setTfaStep('setup')
   }
 
@@ -73,16 +67,21 @@ export default function SettingsPage() {
       body: JSON.stringify({ code: tfaCode }),
     })
     setTfaLoading(false)
-    if (!res.ok) {
-      const data = await res.json()
-      setTfaError(data.error ?? 'Code incorrect.')
-      return
-    }
+    if (!res.ok) { const d = await res.json(); setTfaError(d.error ?? 'Code incorrect.'); return }
     setTfaEnabled(true)
     setTfaStep('idle')
     setTfaCode('')
     setTfaSuccess('2FA activé avec succès !')
     setTimeout(() => setTfaSuccess(''), 4000)
+  }
+
+  async function handleRequestDisable2FA() {
+    setTfaLoading(true)
+    setTfaError('')
+    const res = await fetch('/api/auth/2fa/disable', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+    setTfaLoading(false)
+    if (!res.ok) { setTfaError('Erreur lors de l\'envoi.'); return }
+    setTfaStep('disable')
   }
 
   async function handleDisable2FA(e: React.FormEvent) {
@@ -95,11 +94,7 @@ export default function SettingsPage() {
       body: JSON.stringify({ code: tfaCode }),
     })
     setTfaLoading(false)
-    if (!res.ok) {
-      const data = await res.json()
-      setTfaError(data.error ?? 'Code incorrect.')
-      return
-    }
+    if (!res.ok) { const d = await res.json(); setTfaError(d.error ?? 'Code incorrect.'); return }
     setTfaEnabled(false)
     setTfaStep('idle')
     setTfaCode('')
@@ -140,17 +135,18 @@ export default function SettingsPage() {
             {tfaStep === 'idle' && (
               <>
                 <p className="text-text-muted text-sm">
-                  Protégez votre compte avec Google Authenticator, Authy ou toute app TOTP compatible.
+                  Un code à 6 chiffres sera envoyé à votre email à chaque connexion.
                 </p>
                 {!tfaEnabled ? (
                   <button onClick={handleSetup2FA} disabled={tfaLoading}
                     className="flex items-center gap-2 bg-accent hover:bg-accent-dark disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
-                    {tfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
-                    Activer le 2FA
+                    {tfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    Activer le 2FA par email
                   </button>
                 ) : (
-                  <button onClick={() => { setTfaStep('disable'); setTfaError('') }}
+                  <button onClick={handleRequestDisable2FA} disabled={tfaLoading}
                     className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2.5 rounded-xl text-sm font-semibold border border-red-500/20 transition-colors">
+                    {tfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                     Désactiver le 2FA
                   </button>
                 )}
@@ -159,18 +155,10 @@ export default function SettingsPage() {
 
             {tfaStep === 'setup' && (
               <div className="space-y-4">
-                <p className="text-text-secondary text-sm">
-                  <strong>1.</strong> Scannez ce QR code avec votre application d&apos;authentification.
-                </p>
-                {qrCode && (
-                  <div className="flex justify-center bg-white rounded-xl p-4 w-fit mx-auto">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={qrCode} alt="QR Code 2FA" className="w-48 h-48" />
-                  </div>
-                )}
-                <p className="text-text-secondary text-sm">
-                  <strong>2.</strong> Entrez le code à 6 chiffres pour confirmer.
-                </p>
+                <div className="flex items-center gap-2 text-sm text-text-secondary bg-accent/5 border border-accent/20 rounded-xl px-4 py-3">
+                  <Mail className="w-4 h-4 text-accent shrink-0" />
+                  Code envoyé à votre adresse email — valable 10 minutes.
+                </div>
                 <form onSubmit={handleVerify2FA} className="flex gap-3">
                   <input
                     type="text"
@@ -179,6 +167,7 @@ export default function SettingsPage() {
                     className="flex-1 bg-surface-2 border border-border rounded-xl px-4 py-2.5 text-text-primary text-center text-xl font-mono tracking-widest focus:outline-none focus:border-accent"
                     placeholder="000000"
                     maxLength={6}
+                    autoFocus
                     required
                   />
                   <button type="submit" disabled={tfaLoading || tfaCode.length < 6}
@@ -195,11 +184,14 @@ export default function SettingsPage() {
 
             {tfaStep === 'disable' && (
               <form onSubmit={handleDisable2FA} className="space-y-3">
-                <p className="text-text-secondary text-sm">Entrez votre code 2FA actuel pour confirmer la désactivation.</p>
+                <div className="flex items-center gap-2 text-sm text-text-secondary bg-accent/5 border border-accent/20 rounded-xl px-4 py-3">
+                  <Mail className="w-4 h-4 text-accent shrink-0" />
+                  Code de confirmation envoyé à votre email.
+                </div>
                 <div className="flex gap-3">
                   <input type="text" value={tfaCode} onChange={e => setTfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     className="flex-1 bg-surface-2 border border-border rounded-xl px-4 py-2.5 text-text-primary text-center text-xl font-mono tracking-widest focus:outline-none focus:border-accent"
-                    placeholder="000000" maxLength={6} required />
+                    placeholder="000000" maxLength={6} autoFocus required />
                   <button type="submit" disabled={tfaLoading || tfaCode.length < 6}
                     className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-xl text-sm font-semibold transition-colors">
                     {tfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Désactiver'}

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { generateTotpSecret, generateQRCode } from '@/lib/totp'
+import { generateOtpCode, sendOtpEmail } from '@/lib/email'
 
 export async function POST() {
   const session = await getServerSession(authOptions)
@@ -16,14 +16,15 @@ export async function POST() {
     return NextResponse.json({ error: 'Already enabled' }, { status: 400 })
   }
 
-  const secret = generateTotpSecret()
-  const qrCode = await generateQRCode(user.email, secret)
+  const code = generateOtpCode()
+  const expiry = new Date(Date.now() + 10 * 60 * 1000)
 
-  // Store secret but don't enable yet (must verify first)
   await prisma.user.update({
     where: { id: userId },
-    data: { twoFactorSecret: secret, twoFactorEnabled: false },
+    data: { emailOtpCode: code, emailOtpExpiry: expiry },
   })
 
-  return NextResponse.json({ secret, qrCode })
+  await sendOtpEmail(user.email, code)
+
+  return NextResponse.json({ success: true })
 }

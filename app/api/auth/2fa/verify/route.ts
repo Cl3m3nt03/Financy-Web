@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { verifyTotpCode } from '@/lib/totp'
-import { totpVerifySchema } from '@/lib/validations'
+import { z } from 'zod'
+
+const schema = z.object({ code: z.string().length(6) })
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -11,22 +12,25 @@ export async function POST(req: NextRequest) {
 
   const userId = (session.user as any).id
   const body = await req.json()
-  const parsed = totpVerifySchema.safeParse(body)
+  const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Code invalide' }, { status: 400 })
 
   const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user?.twoFactorSecret) {
-    return NextResponse.json({ error: 'Setup 2FA first' }, { status: 400 })
+  if (!user?.emailOtpCode || !user.emailOtpExpiry) {
+    return NextResponse.json({ error: 'Aucun code en attente. Relancez la configuration.' }, { status: 400 })
   }
 
-  const isValid = verifyTotpCode(parsed.data.code, user.twoFactorSecret)
-  if (!isValid) {
-    return NextResponse.json({ error: 'Code incorrect' }, { status: 400 })
+  if (new Date() > user.emailOtpExpiry) {
+    return NextResponse.json({ error: 'Code expiré. Relancez la configuration.' }, { status: 400 })
+  }
+
+  if (parsed.data.code !== user.emailOtpCode) {
+    return NextResponse.json({ error: 'Code incorrect.' }, { status: 400 })
   }
 
   await prisma.user.update({
     where: { id: userId },
-    data: { twoFactorEnabled: true, twoFactorVerified: true },
+    data: { twoFactorEnabled: true, emailOtpCode: null, emailOtpExpiry: null },
   })
 
   return NextResponse.json({ success: true })
