@@ -4,7 +4,8 @@ import { useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Key, Database, Shield, Lock, Eye, EyeOff, Check, AlertCircle, Loader2, Mail } from 'lucide-react'
+import { Key, Database, Shield, Lock, Eye, EyeOff, Check, AlertCircle, Loader2, Mail, Bell } from 'lucide-react'
+import { PriceAlertsSection } from '@/components/settings/price-alerts'
 
 export default function SettingsPage() {
   const { data: session } = useSession()
@@ -251,6 +252,19 @@ export default function SettingsPage() {
                 Mettre à jour le mot de passe
               </button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* ── Price Alerts ─────────────────────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-text-muted" />
+              <CardTitle>Alertes de prix</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <PriceAlertsSection />
           </CardContent>
         </Card>
 

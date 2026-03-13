@@ -11,15 +11,21 @@ import {
   TrendingUpIcon,
   LineChart,
   Target,
+  ArrowLeftRight,
+  Receipt,
+  Calculator,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
-  { href: '/assets', icon: Wallet, label: 'Mes actifs' },
-  { href: '/portfolio', icon: LineChart, label: 'Portefeuille' },
-  { href: '/goals', icon: Target, label: 'Objectifs' },
-  { href: '/settings', icon: Settings, label: 'Paramètres' },
+  { href: '/dashboard',    icon: LayoutDashboard, label: 'Tableau de bord' },
+  { href: '/assets',       icon: Wallet,          label: 'Mes actifs'      },
+  { href: '/portfolio',    icon: LineChart,        label: 'Portefeuille'    },
+  { href: '/transactions', icon: ArrowLeftRight,  label: 'Transactions'    },
+  { href: '/fiscal',       icon: Receipt,         label: 'Rapport fiscal'  },
+  { href: '/simulator',    icon: Calculator,      label: 'Simulateur'      },
+  { href: '/goals',        icon: Target,          label: 'Objectifs'       },
+  { href: '/settings',     icon: Settings,        label: 'Paramètres'      },
 ]
 
 export function Sidebar() {

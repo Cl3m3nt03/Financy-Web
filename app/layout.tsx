@@ -8,6 +8,13 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Wealth Tracker',
   description: 'Gérez votre patrimoine personnel',
+  manifest: '/manifest.json',
+  themeColor: '#C9A84C',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Financy',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

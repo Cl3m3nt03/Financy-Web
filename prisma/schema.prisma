@@ -23,6 +23,7 @@ model User {
   portfolioSnapshots PortfolioSnapshot[]
   transactions       Transaction[]
   goals              Goal[]
+  priceAlerts        PriceAlert[]
   loginAttempts      LoginAttempt[]
 }
 
@@ -92,6 +93,20 @@ model PortfolioSnapshot {
   totalValue Float
   breakdown  String
   date       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PriceAlert {
+  id        String   @id @default(cuid())
+  userId    String
+  symbol    String
+  name      String?
+  condition String   // 'above' | 'below'
+  target    Float
+  currency  String   @default("EUR")
+  triggered Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

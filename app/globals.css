@@ -37,3 +37,9 @@ body {
 .recharts-tooltip-wrapper {
   outline: none;
 }
+
+@media print {
+  aside, nav, .print\:hidden { display: none !important; }
+  body { background: white !important; color: black !important; }
+  main, .flex-1 { margin-left: 0 !important; }
+}
