@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Loader2, TrendingUp, TrendingDown, Check, ChevronRight } from 'lucide-react'
 import { useCreateAsset, useUpdateAsset } from '@/hooks/use-assets'
-import { Asset, AssetType, SearchResult } from '@/types'
+import { Asset, AssetType, SearchResult, PriceData } from '@/types'
 import { getAssetTypeLabel, formatCurrency, cn } from '@/lib/utils'
 
 // ─── Presets ──────────────────────────────────────────────────────────────────
@@ -85,6 +85,7 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
   const [quantity, setQuantity]           = useState('')
   const [priceChange, setPriceChange]     = useState<number | null>(null)
   const [isFetchingPrice, setIsFetchingPrice] = useState(false)
+  const [dropdownPrices, setDropdownPrices] = useState<Record<string, PriceData>>({})
 
   const searchRef  = useRef<HTMLDivElement>(null)
   const createAsset = useCreateAsset()
@@ -133,6 +134,20 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
     }, 300)
     return () => clearTimeout(timer)
   }, [searchQuery, form.type, isFinancial])
+
+  // ── Fetch prices for all search results to show in dropdown
+  useEffect(() => {
+    if (searchResults.length === 0) { setDropdownPrices({}); return }
+    const symbols = searchResults.map(r => r.symbol).join(',')
+    fetch(`/api/prices?symbols=${symbols}`)
+      .then(r => r.json())
+      .then((prices: PriceData[]) => {
+        const map: Record<string, PriceData> = {}
+        prices.forEach(p => { map[p.symbol] = p })
+        setDropdownPrices(map)
+      })
+      .catch(() => {})
+  }, [searchResults])
 
   // ── Reset smart fields when type changes
   function handleTypeChange(type: AssetType) {
@@ -312,10 +327,25 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            {result.exchange && (
-                              <span className="text-xs text-text-muted hidden sm:block">
-                                {result.exchange}
-                              </span>
+                            {dropdownPrices[result.symbol] ? (
+                              <div className="text-right">
+                                <p className="text-text-primary text-xs font-mono font-semibold">
+                                  {formatCurrency(dropdownPrices[result.symbol].price, result.coinId ? 'EUR' : 'USD')}
+                                </p>
+                                <p className={cn(
+                                  'text-xs font-semibold',
+                                  dropdownPrices[result.symbol].changePercent24h >= 0 ? 'text-emerald-400' : 'text-red-400'
+                                )}>
+                                  {dropdownPrices[result.symbol].changePercent24h >= 0 ? '+' : ''}
+                                  {dropdownPrices[result.symbol].changePercent24h.toFixed(2)}%
+                                </p>
+                              </div>
+                            ) : (
+                              result.exchange && (
+                                <span className="text-xs text-text-muted hidden sm:block">
+                                  {result.exchange}
+                                </span>
+                              )
                             )}
                             <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
                           </div>
