@@ -9,7 +9,7 @@ const ACCENT = '#C9A84C'
 
 function buildSankeyData(assets: Asset[]) {
   const active = assets.filter(a => a.value > 0)
-  const types = [...new Set(active.map(a => a.type))]
+  const types = Array.from(new Set(active.map(a => a.type)))
   const typeStart = 1
   const assetStart = 1 + types.length
 
