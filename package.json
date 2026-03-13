@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
@@ -18,7 +18,7 @@
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.0",
     "lucide-react": "^0.330.0",
-    "next": "14.1.0",
+    "next": "^14.2.35",
     "next-auth": "^4.24.5",
     "otplib": "^13.3.0",
     "qrcode": "^1.5.4",

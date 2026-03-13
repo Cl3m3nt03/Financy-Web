@@ -57,8 +57,8 @@ export function WealthChart({ data }: WealthChartProps) {
             <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="wealthGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#C9A84C" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#C9A84C" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272A" vertical={false} />
@@ -81,11 +81,11 @@ export function WealthChart({ data }: WealthChartProps) {
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#3B82F6"
+                stroke="#C9A84C"
                 strokeWidth={2}
                 fill="url(#wealthGradient)"
                 dot={false}
-                activeDot={{ r: 4, fill: '#3B82F6', stroke: '#09090B', strokeWidth: 2 }}
+                activeDot={{ r: 4, fill: '#C9A84C', stroke: '#09090B', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

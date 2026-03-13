@@ -122,7 +122,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-accent hover:bg-blue-600 disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition-colors"
+                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition-colors"
                 >
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </button>
@@ -186,7 +186,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading || totpCode.length < 6}
-                  className="w-full bg-accent hover:bg-blue-600 disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition-colors"
+                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition-colors"
                 >
                   {loading ? 'Vérification...' : 'Vérifier'}
                 </button>

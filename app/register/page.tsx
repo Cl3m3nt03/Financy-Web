@@ -26,7 +26,7 @@ function getPasswordStrength(password: string): PasswordStrength {
     { label: '',          barColor: 'bg-zinc-700',    textColor: '' },
     { label: 'Faible',    barColor: 'bg-red-500',     textColor: 'text-red-400' },
     { label: 'Moyen',     barColor: 'bg-amber-500',   textColor: 'text-amber-400' },
-    { label: 'Bon',       barColor: 'bg-blue-500',    textColor: 'text-blue-400' },
+    { label: 'Bon',       barColor: 'bg-accent',       textColor: 'text-amber-400' },
     { label: 'Excellent', barColor: 'bg-emerald-500', textColor: 'text-emerald-400' },
   ]
   return { score, ...levels[Math.min(score, 4)] }
@@ -238,7 +238,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading || rules.some(r => !r.ok)}
-              className="w-full bg-accent hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors mt-2"
+              className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors mt-2"
             >
               {loading ? 'Création du compte...' : 'Créer mon compte'}
             </button>

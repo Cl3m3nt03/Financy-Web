@@ -6,6 +6,7 @@ import { StatCard } from '@/components/dashboard/stat-card'
 import { AllocationChart } from '@/components/dashboard/allocation-chart'
 import { WealthChart } from '@/components/dashboard/wealth-chart'
 import { HoldingsTable } from '@/components/dashboard/holdings-table'
+import { SankeyChart } from '@/components/dashboard/sankey-chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePortfolioStats } from '@/hooks/use-portfolio'
 import { useAssets } from '@/hooks/use-assets'
@@ -63,7 +64,7 @@ export default function DashboardPage() {
                 change={displayStats.totalPnlPercent}
                 changeLabel={`${displayStats.totalPnl >= 0 ? '+' : ''}${formatCurrency(displayStats.totalPnl)} vs. investi`}
                 icon={Wallet}
-                iconColor="text-blue-400"
+                iconColor="text-amber-400"
               />
               <StatCard
                 title="Montant investi"
@@ -98,6 +99,9 @@ export default function DashboardPage() {
           </div>
           <AllocationChart breakdown={displayStats.breakdown} totalValue={displayStats.totalValue} />
         </div>
+
+        {/* Sankey — flux patrimoniaux */}
+        <SankeyChart assets={displayAssets} />
 
         {/* Assets overview */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
