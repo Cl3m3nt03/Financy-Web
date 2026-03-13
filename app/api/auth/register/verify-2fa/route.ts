@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifyTotpCode } from '@/lib/totp'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -19,18 +18,29 @@ export async function POST(req: NextRequest) {
     where: { email: parsed.data.email.toLowerCase().trim() },
   })
 
-  if (!user?.twoFactorSecret) {
+  if (!user) {
     return NextResponse.json({ error: 'Compte introuvable' }, { status: 404 })
   }
 
-  const isValid = verifyTotpCode(parsed.data.code, user.twoFactorSecret)
-  if (!isValid) {
-    return NextResponse.json({ error: 'Code incorrect. Vérifiez votre application.' }, { status: 400 })
+  if (!user.emailOtpCode || !user.emailOtpExpiry) {
+    return NextResponse.json({ error: 'Aucun code en attente' }, { status: 400 })
+  }
+
+  if (new Date() > user.emailOtpExpiry) {
+    return NextResponse.json({ error: 'Code expiré. Recréez votre compte.' }, { status: 400 })
+  }
+
+  if (parsed.data.code !== user.emailOtpCode) {
+    return NextResponse.json({ error: 'Code incorrect.' }, { status: 400 })
   }
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { twoFactorEnabled: true, twoFactorVerified: true },
+    data: {
+      twoFactorEnabled: true,
+      emailOtpCode: null,
+      emailOtpExpiry: null,
+    },
   })
 
   return NextResponse.json({ success: true })

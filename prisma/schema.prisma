@@ -13,10 +13,10 @@ model User {
   email              String   @unique
   password           String
   name               String?
-  twoFactorSecret    String?
-  twoFactorEnabled   Boolean  @default(false)
-  twoFactorVerified  Boolean  @default(false)
-  createdAt          DateTime @default(now())
+  twoFactorEnabled   Boolean   @default(false)
+  emailOtpCode       String?
+  emailOtpExpiry     DateTime?
+  createdAt          DateTime  @default(now())
   updatedAt          DateTime @updatedAt
 
   assets             Asset[]

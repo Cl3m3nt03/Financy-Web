@@ -4,8 +4,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
-import { TrendingUp, Eye, EyeOff, AlertCircle, Check, User, Shield, Smartphone } from 'lucide-react'
+import { TrendingUp, Eye, EyeOff, AlertCircle, Check, User, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PasswordStrength {
@@ -33,17 +32,16 @@ function getPasswordStrength(password: string): PasswordStrength {
   return { score, ...levels[Math.min(score, 4)] }
 }
 
-type Step = 'form' | 'qr'
+type Step = 'form' | 'verify'
 
 export default function RegisterPage() {
   const router = useRouter()
   const [step, setStep] = useState<Step>('form')
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
-  const [qrCode, setQrCode] = useState('')
-  const [totpCode, setTotpCode] = useState('')
-  const [showPwd, setShowPwd]     = useState(false)
-  const [error, setError]         = useState('')
-  const [loading, setLoading]     = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [showPwd, setShowPwd] = useState(false)
+  const [error, setError]     = useState('')
+  const [loading, setLoading] = useState(false)
 
   const strength = getPasswordStrength(form.password)
   const rules = [
@@ -56,12 +54,7 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-
-    if (form.password !== form.confirm) {
-      setError('Les mots de passe ne correspondent pas.')
-      return
-    }
-
+    if (form.password !== form.confirm) { setError('Les mots de passe ne correspondent pas.'); return }
     setLoading(true)
 
     const res = await fetch('/api/auth/register', {
@@ -69,17 +62,11 @@ export default function RegisterPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: form.name, email: form.email, password: form.password }),
     })
-
     const data = await res.json()
     setLoading(false)
 
-    if (!res.ok) {
-      setError(data.error ?? 'Une erreur est survenue.')
-      return
-    }
-
-    setQrCode(data.qrCode)
-    setStep('qr')
+    if (!res.ok) { setError(data.error ?? 'Une erreur est survenue.'); return }
+    setStep('verify')
   }
 
   async function handleVerify(e: React.FormEvent) {
@@ -90,31 +77,23 @@ export default function RegisterPage() {
     const res = await fetch('/api/auth/register/verify-2fa', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: form.email, code: totpCode }),
+      body: JSON.stringify({ email: form.email, code: otpCode }),
     })
-
     const data = await res.json()
 
-    if (!res.ok) {
-      setError(data.error ?? 'Code incorrect.')
-      setLoading(false)
-      return
-    }
+    if (!res.ok) { setError(data.error ?? 'Code incorrect.'); setLoading(false); return }
 
-    // Auto-login avec 2FA
     const result = await signIn('credentials', {
       email: form.email,
       password: form.password,
-      totpCode,
       redirect: false,
     })
-
     setLoading(false)
 
     if (!result?.error) {
       router.push('/dashboard')
     } else {
-      setError('Compte créé, mais la connexion a échoué. Connectez-vous manuellement.')
+      setError('Compte vérifié. Connectez-vous.')
       router.push('/login')
     }
   }
@@ -122,7 +101,6 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-10">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-white" />
@@ -132,12 +110,12 @@ export default function RegisterPage() {
 
         <div className="bg-surface border border-border rounded-2xl p-8">
 
-          {/* ── Étape 1 : Formulaire ──────────────────────────────────── */}
+          {/* ── Étape 1 : Formulaire ─────────────────────────────────── */}
           {step === 'form' && (
             <>
               <h1 className="text-xl font-semibold text-text-primary mb-1">Créer un compte</h1>
               <p className="text-text-secondary text-sm mb-8">
-                La 2FA sera configurée directement à l&apos;inscription.
+                Un code de vérification sera envoyé par email.
               </p>
 
               <form onSubmit={handleRegister} className="space-y-4">
@@ -194,15 +172,10 @@ export default function RegisterPage() {
                     <div className="mt-2 space-y-2">
                       <div className="flex gap-1">
                         {[1, 2, 3, 4].map(i => (
-                          <div
-                            key={i}
-                            className={cn('h-1 flex-1 rounded-full transition-all', strength.score >= i ? strength.barColor : 'bg-zinc-700')}
-                          />
+                          <div key={i} className={cn('h-1 flex-1 rounded-full transition-all', strength.score >= i ? strength.barColor : 'bg-zinc-700')} />
                         ))}
                       </div>
-                      {strength.label && (
-                        <p className={cn('text-xs font-medium', strength.textColor)}>Force : {strength.label}</p>
-                      )}
+                      {strength.label && <p className={cn('text-xs font-medium', strength.textColor)}>Force : {strength.label}</p>}
                     </div>
                   )}
                 </div>
@@ -216,9 +189,7 @@ export default function RegisterPage() {
                     className={cn(
                       'w-full bg-surface-2 border rounded-xl px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none transition-colors',
                       form.confirm.length > 0
-                        ? form.confirm === form.password
-                          ? 'border-emerald-500/50 focus:border-emerald-500'
-                          : 'border-red-500/50 focus:border-red-500'
+                        ? form.confirm === form.password ? 'border-emerald-500/50' : 'border-red-500/50'
                         : 'border-border focus:border-accent'
                     )}
                     placeholder="••••••••"
@@ -240,8 +211,7 @@ export default function RegisterPage() {
 
                 {error && (
                   <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    {error}
+                    <AlertCircle className="w-4 h-4 shrink-0" />{error}
                   </div>
                 )}
 
@@ -263,72 +233,57 @@ export default function RegisterPage() {
             </>
           )}
 
-          {/* ── Étape 2 : QR code + vérification ─────────────────────── */}
-          {step === 'qr' && (
+          {/* ── Étape 2 : Vérification email ─────────────────────────── */}
+          {step === 'verify' && (
             <>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-                  <Shield className="w-5 h-5 text-accent" />
+                  <Mail className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold text-text-primary">Configurer la 2FA</h1>
-                  <p className="text-text-secondary text-xs">Sécurisez votre compte dès maintenant</p>
+                  <h1 className="text-lg font-semibold text-text-primary">Vérifiez votre email</h1>
+                  <p className="text-text-secondary text-xs">Code envoyé à {form.email}</p>
                 </div>
               </div>
 
-              <div className="space-y-5">
-                {/* Instructions */}
-                <div className="bg-surface-2 rounded-xl p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-text-secondary">
-                    <Smartphone className="w-4 h-4 text-accent shrink-0" />
-                    <span>Ouvrez <strong className="text-text-primary">Google Authenticator</strong> ou <strong className="text-text-primary">Authy</strong></span>
-                  </div>
-                  <p className="text-text-muted text-xs pl-6">Scannez le QR code ci-dessous pour ajouter votre compte.</p>
-                </div>
+              <p className="text-text-secondary text-sm mb-6">
+                Entrez le code à 6 chiffres envoyé à votre adresse email. Il expire dans 10 minutes.
+              </p>
 
-                {/* QR Code */}
-                {qrCode && (
-                  <div className="flex justify-center">
-                    <div className="bg-white p-3 rounded-xl">
-                      <Image src={qrCode} alt="QR Code 2FA" width={160} height={160} />
-                    </div>
+              <form onSubmit={handleVerify} className="space-y-4">
+                <input
+                  type="text"
+                  value={otpCode}
+                  onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-text-primary text-center text-2xl font-mono tracking-widest placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
+                  placeholder="000000"
+                  maxLength={6}
+                  autoFocus
+                  required
+                />
+
+                {error && (
+                  <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                    <AlertCircle className="w-4 h-4 shrink-0" />{error}
                   </div>
                 )}
 
-                {/* Saisie du code */}
-                <form onSubmit={handleVerify} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-2">
-                      Code à 6 chiffres
-                    </label>
-                    <input
-                      type="text"
-                      value={totpCode}
-                      onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="w-full bg-surface-2 border border-border rounded-xl px-4 py-3 text-text-primary text-center text-2xl font-mono tracking-widest placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-                      placeholder="000000"
-                      maxLength={6}
-                      autoFocus
-                      required
-                    />
-                  </div>
+                <button
+                  type="submit"
+                  disabled={loading || otpCode.length < 6}
+                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors"
+                >
+                  {loading ? 'Vérification...' : 'Vérifier et accéder'}
+                </button>
 
-                  {error && (
-                    <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      {error}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading || totpCode.length < 6}
-                    className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors"
-                  >
-                    {loading ? 'Vérification...' : 'Activer et se connecter'}
-                  </button>
-                </form>
-              </div>
+                <button
+                  type="button"
+                  onClick={() => { setStep('form'); setError(''); setOtpCode('') }}
+                  className="w-full text-text-secondary hover:text-text-primary text-sm transition-colors py-2"
+                >
+                  ← Modifier mes informations
+                </button>
+              </form>
             </>
           )}
 

@@ -37,12 +37,17 @@ export default function LoginPage() {
       return
     }
 
-    if (result.error === 'TOTP_REQUIRED') {
+    if (result.error === 'OTP_REQUIRED') {
       setStep('totp')
       return
     }
-    if (result.error === 'INVALID_TOTP') {
-      setError('Code 2FA incorrect. Vérifiez votre application.')
+    if (result.error === 'INVALID_OTP') {
+      setError('Code incorrect. Vérifiez votre email.')
+      return
+    }
+    if (result.error === 'OTP_EXPIRED') {
+      setError('Code expiré. Reconnectez-vous pour en recevoir un nouveau.')
+      setStep('credentials')
       return
     }
     if (result.error === 'RATE_LIMITED') {
@@ -151,12 +156,12 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold text-text-primary">Vérification 2FA</h1>
-                  <p className="text-text-secondary text-xs">Ouvrez Google Authenticator</p>
+                  <p className="text-text-secondary text-xs">Code envoyé à {email}</p>
                 </div>
               </div>
 
               <p className="text-text-secondary text-sm mb-6">
-                Saisissez le code à 6 chiffres généré par votre application d&apos;authentification.
+                Saisissez le code à 6 chiffres envoyé à votre adresse email.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">

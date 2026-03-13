@@ -2,13 +2,13 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
-import { verifyTotpCode } from '@/lib/totp'
 import { rateLimit } from '@/lib/rate-limit'
+import { generateOtpCode, sendOtpEmail } from '@/lib/email'
 
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 7 * 24 * 60 * 60,
   },
   pages: {
     signIn: '/login',
@@ -19,7 +19,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email:    { label: 'Email',    type: 'email' },
         password: { label: 'Password', type: 'password' },
-        totpCode: { label: 'TOTP',     type: 'text' },
+        totpCode: { label: 'OTP',      type: 'text' },
         ip:       { label: 'IP',       type: 'text' },
       },
       async authorize(credentials) {
@@ -27,18 +27,14 @@ export const authOptions: NextAuthOptions = {
 
         const ip = credentials.ip ?? 'unknown'
 
-        // Rate limiting: 10 attempts per 15 min per IP
         const rl = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)
-        if (!rl.success) {
-          throw new Error('RATE_LIMITED')
-        }
+        if (!rl.success) throw new Error('RATE_LIMITED')
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email.toLowerCase().trim() },
         })
 
         if (!user) {
-          // Timing-safe: still hash to prevent user enumeration
           await bcrypt.compare(credentials.password, '$2b$10$invalid.hash.for.timing')
           throw new Error('INVALID_CREDENTIALS')
         }
@@ -51,15 +47,35 @@ export const authOptions: NextAuthOptions = {
           throw new Error('INVALID_CREDENTIALS')
         }
 
-        // 2FA check
-        if (user.twoFactorEnabled && user.twoFactorSecret) {
+        // ── 2FA par email ──────────────────────────────────────────────────
+        if (user.twoFactorEnabled) {
           if (!credentials.totpCode) {
-            throw new Error('TOTP_REQUIRED')
+            // Générer et envoyer un nouveau code
+            const code = generateOtpCode()
+            const expiry = new Date(Date.now() + 10 * 60 * 1000)
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { emailOtpCode: code, emailOtpExpiry: expiry },
+            })
+            await sendOtpEmail(user.email, code)
+            throw new Error('OTP_REQUIRED')
           }
-          const isValidTotp = verifyTotpCode(credentials.totpCode, user.twoFactorSecret)
-          if (!isValidTotp) {
-            throw new Error('INVALID_TOTP')
+
+          if (!user.emailOtpCode || !user.emailOtpExpiry) {
+            throw new Error('OTP_REQUIRED')
           }
+          if (new Date() > user.emailOtpExpiry) {
+            throw new Error('OTP_EXPIRED')
+          }
+          if (credentials.totpCode !== user.emailOtpCode) {
+            throw new Error('INVALID_OTP')
+          }
+
+          // Code valide — on l'efface
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { emailOtpCode: null, emailOtpExpiry: null },
+          })
         }
 
         await prisma.loginAttempt.create({

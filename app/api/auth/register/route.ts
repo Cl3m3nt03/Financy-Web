@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
 import { rateLimit } from '@/lib/rate-limit'
-import { generateTotpSecret, generateQRCode } from '@/lib/totp'
+import { generateOtpCode, sendOtpEmail } from '@/lib/email'
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Nom requis').max(100).trim(),
@@ -48,18 +48,21 @@ export async function POST(req: NextRequest) {
   }
 
   const hashed = await bcrypt.hash(parsed.data.password, 12)
-  const secret = generateTotpSecret()
-  const qrCode = await generateQRCode(email, secret)
+  const code = generateOtpCode()
+  const expiry = new Date(Date.now() + 10 * 60 * 1000) // 10 min
 
   await prisma.user.create({
     data: {
       name: parsed.data.name,
       email,
       password: hashed,
-      twoFactorSecret: secret,
+      emailOtpCode: code,
+      emailOtpExpiry: expiry,
       twoFactorEnabled: false,
     },
   })
 
-  return NextResponse.json({ qrCode }, { status: 201 })
+  await sendOtpEmail(email, code)
+
+  return NextResponse.json({ success: true }, { status: 201 })
 }
