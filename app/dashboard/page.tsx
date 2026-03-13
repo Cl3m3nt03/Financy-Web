@@ -83,7 +83,7 @@ export default function DashboardPage() {
               />
               <StatCard
                 title="Actifs financiers"
-                value={displayStats.breakdown.STOCK + displayStats.breakdown.CRYPTO}
+                value={displayStats.breakdown.STOCK + displayStats.breakdown.CRYPTO + displayStats.breakdown.PEA + displayStats.breakdown.CTO}
                 icon={BarChart3}
                 iconColor="text-purple-400"
                 subtitle="Bourse + Crypto"

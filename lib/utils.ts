@@ -46,6 +46,8 @@ export function getAssetTypeLabel(type: string): string {
     REAL_ESTATE: 'Immobilier',
     STOCK: 'Bourse',
     CRYPTO: 'Crypto',
+    PEA: 'PEA',
+    CTO: 'Compte-Titres (CTO)',
     OTHER: 'Autre',
   }
   return labels[type] ?? type
@@ -58,6 +60,8 @@ export function getAssetTypeColor(type: string): string {
     REAL_ESTATE: '#F59E0B',
     STOCK: '#8B5CF6',
     CRYPTO: '#F97316',
+    PEA: '#C9A84C',
+    CTO: '#A78BFA',
     OTHER: '#6B7280',
   }
   return colors[type] ?? '#6B7280'

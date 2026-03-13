@@ -114,6 +114,8 @@ export const MOCK_PORTFOLIO_STATS: PortfolioStats = {
     REAL_ESTATE: 320000,
     STOCK: 45200,
     CRYPTO: 18750,
+    PEA: 0,
+    CTO: 0,
     OTHER: 0,
   },
   history: generateHistory(),

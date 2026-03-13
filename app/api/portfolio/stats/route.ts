@@ -22,6 +22,8 @@ export async function GET() {
     REAL_ESTATE: 0,
     STOCK: 0,
     CRYPTO: 0,
+    PEA: 0,
+    CTO: 0,
     OTHER: 0,
   }
 

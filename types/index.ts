@@ -1,4 +1,4 @@
-export type AssetType = 'BANK_ACCOUNT' | 'SAVINGS' | 'REAL_ESTATE' | 'STOCK' | 'CRYPTO' | 'OTHER'
+export type AssetType = 'BANK_ACCOUNT' | 'SAVINGS' | 'REAL_ESTATE' | 'STOCK' | 'CRYPTO' | 'PEA' | 'CTO' | 'OTHER'
 
 export interface SearchResult {
   symbol: string
@@ -65,6 +65,8 @@ export interface AssetBreakdown {
   REAL_ESTATE: number
   STOCK: number
   CRYPTO: number
+  PEA: number
+  CTO: number
   OTHER: number
 }
 

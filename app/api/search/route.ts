@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(results)
   }
 
-  if (type === 'STOCK') {
+  if (type === 'STOCK' || type === 'PEA' || type === 'CTO') {
     const results = await searchStock(q)
     return NextResponse.json(results)
   }

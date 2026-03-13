@@ -34,7 +34,7 @@ const REAL_ESTATE_PRESETS = [
   { name: 'Résidence secondaire',   notes: '' },
 ]
 
-const ASSET_TYPES: AssetType[] = ['BANK_ACCOUNT', 'SAVINGS', 'REAL_ESTATE', 'STOCK', 'CRYPTO', 'OTHER']
+const ASSET_TYPES: AssetType[] = ['BANK_ACCOUNT', 'SAVINGS', 'REAL_ESTATE', 'STOCK', 'CRYPTO', 'PEA', 'CTO', 'OTHER']
 
 const TYPE_ICONS: Record<string, string> = {
   BANK_ACCOUNT: '🏦',
@@ -42,6 +42,8 @@ const TYPE_ICONS: Record<string, string> = {
   REAL_ESTATE: '🏠',
   STOCK: '📈',
   CRYPTO: '₿',
+  PEA: '🇫🇷',
+  CTO: '📊',
   OTHER: '📦',
 }
 
@@ -92,7 +94,7 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
   const updateAsset = useUpdateAsset()
   const isPending   = createAsset.isPending || updateAsset.isPending
 
-  const isFinancial = form.type === 'STOCK' || form.type === 'CRYPTO'
+  const isFinancial = form.type === 'STOCK' || form.type === 'CRYPTO' || form.type === 'PEA' || form.type === 'CTO'
 
   // Computed total for financial assets
   const totalValue = isFinancial
