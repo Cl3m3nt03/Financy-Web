@@ -77,7 +77,7 @@ export default function SimulatorPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Simulateur" subtitle="Projection avec la formule Vf = Vi × (1 + ρ/n)^(n×t)" />
 
-      <div className="flex-1 p-6 space-y-6 max-w-4xl">
+      <div className="flex-1 p-6 space-y-6 max-w-8xl">
 
         {/* Formule */}
         <Card className="border-accent/20 bg-accent/5">

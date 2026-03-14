@@ -106,7 +106,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header title="Paramètres" />
-      <div className="flex-1 p-6 space-y-6 max-w-2xl">
+      <div className="flex-1 p-6 space-y-6 max-w-8xl">
 
         {/* ── 2FA ─────────────────────────────────────────────────────── */}
         <Card>

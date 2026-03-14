@@ -64,7 +64,7 @@ export default function FiscalPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Rapport fiscal" subtitle="Plus-values, dividendes et estimations d'impot" />
 
-      <div className="flex-1 p-6 space-y-6 max-w-4xl">
+      <div className="flex-1 p-6 space-y-6 max-w-8xl">
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

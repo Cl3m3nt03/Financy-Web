@@ -11,8 +11,100 @@ import { usePrices } from '@/hooks/use-prices'
 import { MOCK_ASSETS } from '@/services/mock-data'
 import { Holding } from '@/types'
 import { formatCurrency, cn } from '@/lib/utils'
-import { TrendingUp, TrendingDown, RefreshCw, LineChart, Gift, Globe } from 'lucide-react'
+import { TrendingUp, TrendingDown, RefreshCw, LineChart, Gift, Globe, LayoutGrid, Table2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+
+// ─── Visual P&L card ──────────────────────────────────────────────────────────
+
+function PnlCard({ holding, assetType }: { holding: any; assetType: string }) {
+  const pnl      = holding.pnl ?? 0
+  const pnlPct   = holding.pnlPercent ?? 0
+  const invested = holding.quantity * holding.avgBuyPrice
+  const current  = holding.currentValue ?? invested
+  const isPos    = pnl >= 0
+
+  // Bar: ratio current/max(invested, current) capped at 100%
+  const maxVal   = Math.max(invested, current)
+  const barInvested = maxVal > 0 ? (invested / maxVal) * 100 : 100
+  const barCurrent  = maxVal > 0 ? (current  / maxVal) * 100 : 100
+
+  const TYPE_COLORS: Record<string, string> = {
+    PEA: '#C9A84C', CTO: '#A78BFA', STOCK: '#3B82F6', CRYPTO: '#F97316',
+  }
+  const typeColor = TYPE_COLORS[assetType] ?? '#C9A84C'
+
+  return (
+    <div className="bg-surface-2 rounded-2xl p-4 border border-border hover:border-accent/40 transition-all group">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
+            style={{ background: typeColor + '20', color: typeColor }}>
+            {holding.symbol.slice(0, 3)}
+          </div>
+          <div>
+            <p className="text-text-primary font-semibold text-sm leading-tight">{holding.symbol}</p>
+            <p className="text-text-muted text-xs truncate max-w-[120px]">{holding.name}</p>
+          </div>
+        </div>
+        <div className={cn(
+          'flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold shrink-0',
+          isPos ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
+        )}>
+          {isPos ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          {isPos ? '+' : ''}{pnlPct.toFixed(2)}%
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+        <div>
+          <p className="text-text-muted mb-0.5">Qté</p>
+          <p className="font-mono font-semibold text-text-primary">
+            {holding.quantity < 1 ? holding.quantity.toFixed(4) : holding.quantity.toFixed(2)}
+          </p>
+        </div>
+        <div>
+          <p className="text-text-muted mb-0.5">PRU</p>
+          <p className="font-mono font-semibold text-text-primary">
+            {formatCurrency(holding.avgBuyPrice, holding.currency)}
+          </p>
+        </div>
+        <div>
+          <p className="text-text-muted mb-0.5">Cours</p>
+          <p className={cn('font-mono font-semibold', holding.currentPrice ? 'text-text-primary' : 'text-text-muted')}>
+            {holding.currentPrice ? formatCurrency(holding.currentPrice, holding.currency) : '—'}
+          </p>
+        </div>
+      </div>
+
+      {/* Visual bar */}
+      <div className="mb-2">
+        <div className="relative h-3 bg-surface rounded-full overflow-hidden">
+          {/* Invested baseline */}
+          <div className="absolute inset-y-0 left-0 rounded-full opacity-30"
+            style={{ width: `${barInvested}%`, background: '#6B7280' }} />
+          {/* Current value */}
+          <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
+            style={{ width: `${barCurrent}%`, background: isPos ? '#10B981' : '#EF4444' }} />
+        </div>
+        <div className="flex justify-between text-xs text-text-muted mt-1">
+          <span>Investi&nbsp;: <span className="font-mono text-text-secondary">{formatCurrency(invested, holding.currency)}</span></span>
+          <span>Valeur&nbsp;: <span className="font-mono text-text-secondary">{formatCurrency(current, holding.currency)}</span></span>
+        </div>
+      </div>
+
+      {/* P&L bottom */}
+      <div className={cn(
+        'flex items-center justify-center gap-1.5 py-2 rounded-xl font-mono font-bold text-sm mt-1',
+        isPos ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+      )}>
+        {isPos ? '+' : ''}{formatCurrency(pnl, holding.currency)}
+        <span className="text-xs opacity-70">({isPos ? '+' : ''}{pnlPct.toFixed(2)}%)</span>
+      </div>
+    </div>
+  )
+}
 
 const FINANCIAL_TYPES = ['STOCK', 'CRYPTO', 'PEA', 'CTO']
 
@@ -25,7 +117,8 @@ const TABS = [
 ]
 
 export default function PortfolioPage() {
-  const [tab, setTab] = useState('positions')
+  const [tab,  setTab]  = useState('positions')
+  const [view, setView] = useState<'cards' | 'table'>('cards')
   const { data: assets } = useAssets()
   const { data: transactions } = useTransactions()
   const displayAssets = assets ?? MOCK_ASSETS
@@ -80,7 +173,7 @@ export default function PortfolioPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Portefeuille" subtitle="Positions, performance et analyse" />
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-6 max-w-8xl w-full">
 
         {/* Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -133,30 +226,88 @@ export default function PortfolioPage() {
         </div>
 
         {/* Tab: Positions */}
-        {tab === 'positions' && (
-          financialAssets.map(asset => {
-            const assetHoldings = enrichedHoldings.filter(h => h.assetId === asset.id)
-            if (assetHoldings.length === 0) return null
-            return (
-              <Card key={asset.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>{asset.name}</CardTitle>
-                    {asset.institution && <span className="text-text-muted text-xs">{asset.institution}</span>}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <HoldingsTable holdings={assetHoldings} />
-                </CardContent>
-              </Card>
-            )
-          })
-        )}
         {tab === 'positions' && allHoldings.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-text-primary font-semibold mb-2">Aucune position</p>
             <p className="text-text-muted text-sm">Ajoutez des actifs Bourse / Crypto / PEA / CTO dans "Mes actifs".</p>
           </div>
+        )}
+
+        {tab === 'positions' && allHoldings.length > 0 && (
+          <>
+            {/* View toggle */}
+            <div className="flex items-center justify-between">
+              <p className="text-text-muted text-sm">{enrichedHoldings.length} position{enrichedHoldings.length > 1 ? 's' : ''}</p>
+              <div className="flex gap-1 bg-surface border border-border rounded-xl p-1">
+                <button onClick={() => setView('cards')}
+                  className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                    view === 'cards' ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-text-primary')}>
+                  <LayoutGrid className="w-3.5 h-3.5" /> Cartes
+                </button>
+                <button onClick={() => setView('table')}
+                  className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                    view === 'table' ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-text-primary')}>
+                  <Table2 className="w-3.5 h-3.5" /> Tableau
+                </button>
+              </div>
+            </div>
+
+            {/* Cards view */}
+            {view === 'cards' && financialAssets.map(asset => {
+              const assetHoldings = enrichedHoldings.filter(h => h.assetId === asset.id)
+              if (assetHoldings.length === 0) return null
+              const assetInvested = assetHoldings.reduce((s, h) => s + h.quantity * h.avgBuyPrice, 0)
+              const assetValue    = assetHoldings.reduce((s, h) => s + (h.currentValue ?? h.quantity * h.avgBuyPrice), 0)
+              const assetPnl      = assetValue - assetInvested
+              const assetPnlPct   = assetInvested > 0 ? (assetPnl / assetInvested) * 100 : 0
+              const isAssetPos    = assetPnl >= 0
+              return (
+                <div key={asset.id} className="space-y-3">
+                  {/* Asset header */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-text-primary font-semibold text-sm">{asset.name}</h3>
+                      <span className="text-xs text-text-muted bg-surface-2 px-2 py-0.5 rounded-lg">{asset.type}</span>
+                      {asset.institution && <span className="text-xs text-text-muted">{asset.institution}</span>}
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-text-muted text-xs">
+                        {formatCurrency(assetValue)} &nbsp;
+                        <span className={cn('font-mono font-semibold', isAssetPos ? 'text-emerald-400' : 'text-red-400')}>
+                          ({isAssetPos ? '+' : ''}{assetPnlPct.toFixed(2)}%)
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  {/* Holdings grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {assetHoldings.map(h => (
+                      <PnlCard key={h.id} holding={h} assetType={asset.type} />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Table view */}
+            {view === 'table' && financialAssets.map(asset => {
+              const assetHoldings = enrichedHoldings.filter(h => h.assetId === asset.id)
+              if (assetHoldings.length === 0) return null
+              return (
+                <Card key={asset.id}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>{asset.name}</CardTitle>
+                      {asset.institution && <span className="text-text-muted text-xs">{asset.institution}</span>}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <HoldingsTable holdings={assetHoldings} />
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </>
         )}
 
         {/* Tab: Performance */}
