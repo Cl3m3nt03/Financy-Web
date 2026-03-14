@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency, cn } from '@/lib/utils'
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sankey } from 'recharts'
 import { Plus, Trash2, Wallet, ShoppingCart, PiggyBank, TrendingUp, AlertCircle, Check, CalendarDays } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,6 +49,80 @@ const DEFAULT_ITEMS: Omit<BudgetItem, 'id'>[] = [
   { label: 'Epargne PEA',            amount: 200,  category: 'savings', dayOfMonth: 25, recurring: true },
   { label: 'Livret A',               amount: 100,  category: 'savings', dayOfMonth: 25, recurring: true },
 ]
+
+// ─── Sankey helpers ───────────────────────────────────────────────────────────
+
+const CAT_COLORS: Record<Category, string> = {
+  needs:   '#C9A84C',
+  wants:   '#8B5CF6',
+  savings: '#10B981',
+}
+
+function buildBudgetSankey(items: BudgetItem[], income: number) {
+  const INCOME = 0
+  const CAT_IDX: Record<Category, number> = { needs: 1, wants: 2, savings: 3 }
+  const remaining = income - items.reduce((s, i) => s + i.amount, 0)
+  const hasRemaining = remaining > 0
+
+  const nodes: { name: string; color: string }[] = [
+    { name: 'Revenus',  color: '#C9A84C' },
+    { name: 'Besoins',  color: CAT_COLORS.needs   },
+    { name: 'Envies',   color: CAT_COLORS.wants   },
+    { name: 'Épargne',  color: CAT_COLORS.savings  },
+    ...(hasRemaining ? [{ name: 'Non alloué', color: '#3F3F46' }] : []),
+    ...items.map(i => ({ name: i.label, color: CAT_COLORS[i.category] })),
+  ]
+
+  const ITEM_START = hasRemaining ? 5 : 4
+
+  const links = [
+    // Revenus → catégories
+    ...(['needs', 'wants', 'savings'] as Category[]).map(cat => {
+      const total = items.filter(i => i.category === cat).reduce((s, i) => s + i.amount, 0)
+      return total > 0 ? { source: INCOME, target: CAT_IDX[cat], value: total } : null
+    }).filter(Boolean) as { source: number; target: number; value: number }[],
+    // Revenus → non alloué
+    ...(hasRemaining ? [{ source: INCOME, target: 4, value: remaining }] : []),
+    // Catégories → postes
+    ...items.map((item, idx) => ({
+      source: CAT_IDX[item.category],
+      target: ITEM_START + idx,
+      value:  item.amount,
+    })),
+  ]
+
+  return { nodes, links }
+}
+
+function SankeyNode({ x = 0, y = 0, width = 10, height = 0, payload }: any) {
+  const color: string = payload?.color ?? '#C9A84C'
+  const h = Math.max(height as number, 2)
+  const label: string = payload?.name ?? ''
+  const short = label.length > 20 ? label.slice(0, 18) + '…' : label
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={h} fill={color} fillOpacity={0.9} rx={3} ry={3} />
+      <text x={(x as number) + (width as number) + 8} y={(y as number) + h / 2} dy="0.35em"
+        fontSize={11} fill="#A1A1AA" fontFamily="Inter, system-ui, sans-serif">
+        {short}
+      </text>
+    </g>
+  )
+}
+
+function SankeyTip({ active, payload }: any) {
+  if (!active || !payload?.length) return null
+  const d = payload[0]?.payload
+  if (!d) return null
+  return (
+    <div className="bg-surface border border-border rounded-xl p-3 shadow-xl text-sm">
+      {'source' in d
+        ? <><p className="text-text-muted text-xs mb-1">{d.source?.name} → {d.target?.name}</p></>
+        : <p className="text-text-muted text-xs mb-1">{d.name}</p>}
+      <p className="text-text-primary font-bold font-mono">{formatCurrency(d.value)}</p>
+    </div>
+  )
+}
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
@@ -226,7 +300,7 @@ export default function BudgetPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Budget" subtitle="Regle des 50/30/20 et flux mensuel" />
 
-      <div className="flex-1 p-6 space-y-6 max-w-5xl">
+      <div className="flex-1 p-6 space-y-6 max-w-7xl w-full">
 
         {/* Income */}
         <Card>
@@ -497,81 +571,111 @@ export default function BudgetPage() {
 
         {/* ── TAB: Flux mensuel ────────────────────────────────────────────── */}
         {tab === 'flux' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CalendarDays className="w-4 h-4 text-accent" />
-                Flux de tresorerie mensuel
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              {/* Starting balance */}
-              <div className="flex items-center gap-4 px-4 py-3 bg-accent/10 border border-accent/30 rounded-xl mb-4">
-                <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
-                  <span className="text-accent text-xs font-bold">J-1</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-text-primary text-sm font-semibold">Salaire / Revenus</p>
-                  <p className="text-text-muted text-xs">Debut du mois</p>
-                </div>
-                <p className="font-mono font-bold text-accent text-sm">+{formatCurrency(income)}</p>
-                <p className="font-mono font-bold text-text-primary text-sm w-28 text-right">
-                  {formatCurrency(income)}
-                </p>
-              </div>
-
-              {fluxWithBalance.length === 0 && (
-                <p className="text-text-muted text-sm text-center py-8">
-                  Ajoutez un jour de prelevement (champ &quot;Jour&quot;) dans vos postes de budget pour les voir ici.
-                </p>
-              )}
-
-              {fluxWithBalance.map((item, i) => {
-                const cfg  = CATEGORY_CONFIG[item.category]
-                const Icon = cfg.icon
-                const prev = i === 0 ? income : fluxWithBalance[i - 1].balanceAfter
-                return (
-                  <div key={item.id} className="flex items-center gap-4 px-4 py-2.5 rounded-xl hover:bg-surface-2/50 transition-colors border border-transparent hover:border-border">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
-                      style={{ background: cfg.color + '20', color: cfg.color }}>
-                      {item.dayOfMonth}
-                    </div>
-                    <Icon className="w-4 h-4 shrink-0" style={{ color: cfg.color }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-text-primary text-sm font-medium truncate">{item.label}</p>
-                      <p className="text-text-muted text-xs">{cfg.label}</p>
-                    </div>
-                    <p className="font-mono text-sm text-red-400 font-semibold w-28 text-right shrink-0">
-                      -{formatCurrency(item.amount)}
-                    </p>
-                    <div className="w-32 text-right shrink-0">
-                      <p className={cn('font-mono text-sm font-bold',
-                        item.balanceAfter >= 0 ? 'text-text-primary' : 'text-red-400')}>
-                        {formatCurrency(item.balanceAfter)}
-                      </p>
-                      {item.balanceAfter < 0 && (
-                        <p className="text-red-400 text-xs">Decouvert !</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-
-              {fluxWithBalance.length > 0 && (
-                <div className="flex items-center gap-4 px-4 py-3 mt-3 bg-surface-2 rounded-xl border border-border">
-                  <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center">
-                    <span className="text-text-muted text-xs font-bold">Fin</span>
-                  </div>
-                  <p className="flex-1 text-text-secondary text-sm font-semibold">Solde fin de mois</p>
-                  <p className="w-28" />
-                  <p className={cn('font-mono font-bold text-sm w-32 text-right',
-                    remaining >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                    {remaining >= 0 ? '+' : ''}{formatCurrency(remaining)}
+          <div className="space-y-6">
+            {/* Sankey */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CalendarDays className="w-4 h-4 text-accent" />
+                  Flux de trésorerie mensuel
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {items.length === 0 ? (
+                  <p className="text-text-muted text-sm text-center py-12">
+                    Ajoutez des postes de budget pour visualiser le flux.
                   </p>
+                ) : (
+                  <div className="h-96">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <Sankey
+                        data={buildBudgetSankey(items, income)}
+                        node={<SankeyNode />}
+                        link={{ stroke: '#C9A84C', fill: '#C9A84C', fillOpacity: 0.08 }}
+                        nodePadding={14}
+                        nodeWidth={14}
+                        margin={{ top: 8, right: 200, bottom: 8, left: 8 }}
+                      >
+                        <Tooltip content={<SankeyTip />} />
+                      </Sankey>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Cashflow table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-text-secondary">
+                  Échéancier mensuel
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <div className="flex items-center gap-4 px-4 py-3 bg-accent/10 border border-accent/30 rounded-xl mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                    <span className="text-accent text-xs font-bold">J-1</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-text-primary text-sm font-semibold">Salaire / Revenus</p>
+                    <p className="text-text-muted text-xs">Début du mois</p>
+                  </div>
+                  <p className="font-mono font-bold text-accent text-sm">+{formatCurrency(income)}</p>
+                  <p className="font-mono font-bold text-text-primary text-sm w-28 text-right">{formatCurrency(income)}</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                {fluxWithBalance.length === 0 && (
+                  <p className="text-text-muted text-sm text-center py-6">
+                    Ajoutez un jour de prélèvement (&quot;Jour&quot;) dans vos postes pour les voir ici.
+                  </p>
+                )}
+
+                {fluxWithBalance.map((item, i) => {
+                  const cfg  = CATEGORY_CONFIG[item.category]
+                  const Icon = cfg.icon
+                  return (
+                    <div key={item.id} className="flex items-center gap-4 px-4 py-2.5 rounded-xl hover:bg-surface-2/50 transition-colors border border-transparent hover:border-border">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0"
+                        style={{ background: cfg.color + '20', color: cfg.color }}>
+                        {item.dayOfMonth}
+                      </div>
+                      <Icon className="w-4 h-4 shrink-0" style={{ color: cfg.color }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-text-primary text-sm font-medium truncate">{item.label}</p>
+                        <p className="text-text-muted text-xs">{cfg.label}</p>
+                      </div>
+                      <p className="font-mono text-sm text-red-400 font-semibold w-28 text-right shrink-0">
+                        -{formatCurrency(item.amount)}
+                      </p>
+                      <div className="w-32 text-right shrink-0">
+                        <p className={cn('font-mono text-sm font-bold',
+                          item.balanceAfter >= 0 ? 'text-text-primary' : 'text-red-400')}>
+                          {formatCurrency(item.balanceAfter)}
+                        </p>
+                        {item.balanceAfter < 0 && (
+                          <p className="text-red-400 text-xs">Découvert !</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {fluxWithBalance.length > 0 && (
+                  <div className="flex items-center gap-4 px-4 py-3 mt-3 bg-surface-2 rounded-xl border border-border">
+                    <div className="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center">
+                      <span className="text-text-muted text-xs font-bold">Fin</span>
+                    </div>
+                    <p className="flex-1 text-text-secondary text-sm font-semibold">Solde fin de mois</p>
+                    <p className="w-28" />
+                    <p className={cn('font-mono font-bold text-sm w-32 text-right',
+                      remaining >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                      {remaining >= 0 ? '+' : ''}{formatCurrency(remaining)}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         )}
 
       </div>
