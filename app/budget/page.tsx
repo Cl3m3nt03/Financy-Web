@@ -39,15 +39,14 @@ const CATEGORY_CONFIG: Record<Category, {
 const CATEGORIES: Category[] = ['needs', 'wants', 'savings']
 
 const DEFAULT_ITEMS: Omit<BudgetItem, 'id'>[] = [
-  { label: 'Loyer / Credit immo',   amount: 900,  category: 'needs',   dayOfMonth: 1,  recurring: true },
-  { label: 'Alimentation',           amount: 350,  category: 'needs',   dayOfMonth: null, recurring: true },
-  { label: 'Transport',              amount: 120,  category: 'needs',   dayOfMonth: 5,  recurring: true },
-  { label: 'Factures & abonnements', amount: 80,   category: 'needs',   dayOfMonth: 10, recurring: true },
-  { label: 'Restaurants & sorties',  amount: 150,  category: 'wants',   dayOfMonth: null, recurring: true },
-  { label: 'Shopping & loisirs',     amount: 100,  category: 'wants',   dayOfMonth: null, recurring: true },
-  { label: 'Vacances',               amount: 100,  category: 'wants',   dayOfMonth: null, recurring: true },
-  { label: 'Epargne PEA',            amount: 200,  category: 'savings', dayOfMonth: 25, recurring: true },
-  { label: 'Livret A',               amount: 100,  category: 'savings', dayOfMonth: 25, recurring: true },
+  { label: 'Loyer / Crédit immo',    amount: 900, category: 'needs',   dayOfMonth: 1,    recurring: true },
+  { label: 'Alimentation',            amount: 350, category: 'needs',   dayOfMonth: null, recurring: true },
+  { label: 'Transport',               amount: 120, category: 'needs',   dayOfMonth: 5,    recurring: true },
+  { label: 'Factures & abonnements',  amount: 80,  category: 'needs',   dayOfMonth: 10,   recurring: true },
+  { label: 'Restaurants & sorties',   amount: 150, category: 'wants',   dayOfMonth: null, recurring: true },
+  { label: 'Shopping & loisirs',      amount: 100, category: 'wants',   dayOfMonth: null, recurring: true },
+  { label: 'Vacances',                amount: 100, category: 'wants',   dayOfMonth: null, recurring: true },
+  { label: 'Épargne mensuelle',        amount: 300, category: 'savings', dayOfMonth: 25,   recurring: true },
 ]
 
 // ─── Sankey helpers ───────────────────────────────────────────────────────────
