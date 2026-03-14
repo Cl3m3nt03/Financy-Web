@@ -39,32 +39,30 @@ function buildSankeyData(assets: Asset[]) {
 
 function CustomNode({ x = 0, y = 0, width = 10, height = 0, payload }: any) {
   const color: string = payload?.color ?? ACCENT
-  const nodeH = Math.max(height as number, 2)
-  const label: string = payload?.name ?? ''
-  const truncated = label.length > 22 ? label.slice(0, 20) + '…' : label
+  const h             = Math.max(height as number, 2)
+  const label: string = payload?.name  ?? ''
+  const value: number = payload?.value ?? 0
+  const truncated     = label.length > 22 ? label.slice(0, 20) + '…' : label
+  const tx            = (x as number) + (width as number) + 8
+  const showAmount    = h >= 18
 
   return (
     <g>
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={nodeH}
-        fill={color}
-        fillOpacity={0.85}
-        rx={3}
-        ry={3}
-      />
+      <rect x={x} y={y} width={width} height={h} fill={color} fillOpacity={0.85} rx={3} ry={3} />
       <text
-        x={(x as number) + (width as number) + 8}
-        y={(y as number) + nodeH / 2}
-        dy="0.35em"
-        fontSize={11}
-        fill="#A1A1AA"
-        fontFamily="Inter, system-ui, sans-serif"
+        x={tx} y={(y as number) + h / 2 + (showAmount ? -7 : 0)} dy="0.35em"
+        fontSize={11} fill="#A1A1AA" fontFamily="Inter, system-ui, sans-serif"
       >
         {truncated}
       </text>
+      {showAmount && (
+        <text
+          x={tx} y={(y as number) + h / 2 + 8} dy="0.35em"
+          fontSize={10} fill={color} fontFamily="Inter, system-ui, sans-serif" fontWeight={600}
+        >
+          {formatCurrency(value)}
+        </text>
+      )}
     </g>
   )
 }
@@ -73,26 +71,17 @@ function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   const d = payload[0]?.payload
   if (!d) return null
-
-  if ('source' in d) {
-    return (
-      <div className="bg-surface border border-border rounded-xl p-3 shadow-xl text-sm">
-        <p className="text-text-muted text-xs mb-1">
-          {d.source?.name} → {d.target?.name}
-        </p>
-        <p className="text-text-primary font-bold font-mono">
-          {formatCurrency(d.value)}
-        </p>
-      </div>
-    )
-  }
-
+  const isLink = 'source' in d
   return (
-    <div className="bg-surface border border-border rounded-xl p-3 shadow-xl text-sm">
-      <p className="text-text-muted text-xs mb-1">{d.name}</p>
-      <p className="text-text-primary font-bold font-mono">
-        {formatCurrency(d.value)}
-      </p>
+    <div className="bg-surface border border-border rounded-xl p-3 shadow-xl text-sm min-w-[160px]">
+      {isLink ? (
+        <p className="text-text-muted text-xs mb-1.5">
+          {d.source?.name} <span style={{ color: ACCENT }}>→</span> {d.target?.name}
+        </p>
+      ) : (
+        <p className="text-text-muted text-xs mb-1.5">{d.name}</p>
+      )}
+      <p className="text-text-primary font-bold font-mono text-base">{formatCurrency(d.value)}</p>
     </div>
   )
 }
