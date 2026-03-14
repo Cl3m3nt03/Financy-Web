@@ -24,6 +24,8 @@ model User {
   transactions       Transaction[]
   goals              Goal[]
   priceAlerts        PriceAlert[]
+  budgetItems        BudgetItem[]
+  budgetIncome       BudgetIncome?
   loginAttempts      LoginAttempt[]
 }
 
@@ -93,6 +95,29 @@ model PortfolioSnapshot {
   totalValue Float
   breakdown  String
   date       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BudgetItem {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String
+  amount    Float
+  category  String   // 'needs' | 'wants' | 'savings'
+  dayOfMonth Int?    // jour du mois du prélèvement (1-31)
+  recurring Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BudgetIncome {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  amount    Float
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
