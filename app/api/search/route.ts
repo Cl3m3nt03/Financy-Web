@@ -53,20 +53,55 @@ const POPULAR_STOCKS: SearchResult[] = [
   { symbol: 'SGO.PA', name: 'Saint-Gobain',         exchange: 'Euronext Paris' },
   { symbol: 'WLN.PA', name: 'Worldline',            exchange: 'Euronext Paris' },
   // ETF
-  { symbol: 'IWDA.AS', name: 'iShares Core MSCI World ETF',    exchange: 'Euronext Amsterdam' },
-  { symbol: 'CW8.PA',  name: 'Amundi MSCI World ETF',          exchange: 'Euronext Paris' },
-  { symbol: 'PANX.PA', name: 'Amundi NASDAQ-100 ETF',          exchange: 'Euronext Paris' },
-  { symbol: 'SPY',     name: 'SPDR S&P 500 ETF',              exchange: 'NYSE' },
-  { symbol: 'QQQ',     name: 'Invesco QQQ Trust (NASDAQ-100)', exchange: 'NASDAQ' },
+  { symbol: 'IWDA.AS', name: 'iShares Core MSCI World ETF',            exchange: 'Euronext Amsterdam' },
+  { symbol: 'CW8.PA',  name: 'Amundi MSCI World ETF',                   exchange: 'Euronext Paris' },
+  { symbol: 'PANX.PA', name: 'Amundi NASDAQ-100 ETF',                   exchange: 'Euronext Paris' },
+  { symbol: 'ESE.PA',  name: 'BNP Paribas Easy S&P 500 UCITS ETF EUR', exchange: 'Euronext Paris' },
+  { symbol: 'RS2K.PA', name: 'Amundi Russell 2000 ETF',                 exchange: 'Euronext Paris' },
+  { symbol: 'PAEEM.PA',name: 'Amundi MSCI Emerging Markets ETF',        exchange: 'Euronext Paris' },
+  { symbol: 'CAC.PA',  name: 'Lyxor CAC 40 ETF',                        exchange: 'Euronext Paris' },
+  { symbol: 'SPY',     name: 'SPDR S&P 500 ETF',                        exchange: 'NYSE' },
+  { symbol: 'QQQ',     name: 'Invesco QQQ Trust (NASDAQ-100)',           exchange: 'NASDAQ' },
+  { symbol: 'VT',      name: 'Vanguard Total World Stock ETF',           exchange: 'NYSE' },
+  { symbol: 'VWO',     name: 'Vanguard FTSE Emerging Markets ETF',       exchange: 'NYSE' },
 ]
 
 // ─── ISIN detection & resolution ───────────────────────────────────────────────
 
 const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/
 
+// OpenFIGI exchCode → Yahoo Finance ticker suffix
+const EXCHANGE_SUFFIX: Record<string, string> = {
+  EPA: '.PA',   // Euronext Paris
+  EAM: '.AS',   // Euronext Amsterdam
+  EBR: '.BR',   // Euronext Bruxelles
+  ELI: '.LS',   // Euronext Lisbonne
+  ETR: '.DE',   // Xetra / Frankfurt
+  XETRA: '.DE',
+  LSE: '.L',    // London Stock Exchange
+  SWX: '.SW',   // SIX Swiss Exchange
+  MIL: '.MI',   // Borsa Italiana
+  BME: '.MC',   // Madrid
+  HEL: '.HE',   // Helsinki
+  OSL: '.OL',   // Oslo
+  CPH: '.CO',   // Copenhague
+  STO: '.ST',   // Stockholm
+  TSX: '.TO',   // Toronto
+  ASX: '.AX',   // Australian Securities Exchange
+  HKG: '.HK',   // Hong Kong
+  TYO: '.T',    // Tokyo
+}
+
+function toYahooSymbol(ticker: string, exchCode: string): string {
+  if (!ticker) return ticker
+  // Already has a suffix (e.g. MC.PA from Alpha Vantage)
+  if (ticker.includes('.')) return ticker
+  const suffix = EXCHANGE_SUFFIX[exchCode.toUpperCase()] ?? ''
+  return suffix ? `${ticker}${suffix}` : ticker
+}
+
 async function resolveISIN(isin: string): Promise<SearchResult[]> {
   try {
-    // OpenFIGI: free API, no key required for basic use
     const res = await fetch('https://api.openfigi.com/v3/mapping', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -78,13 +113,12 @@ async function resolveISIN(isin: string): Promise<SearchResult[]> {
     const matches: any[] = data[0]?.data ?? []
     if (matches.length === 0) throw new Error('No FIGI match')
     return matches.slice(0, 8).map((m: any) => ({
-      symbol:   m.ticker ?? isin,
-      name:     m.name   ?? isin,
+      symbol:   toYahooSymbol(m.ticker ?? '', m.exchCode ?? ''),
+      name:     m.name     ?? isin,
       exchange: m.exchCode ?? '',
       isin,
     }))
   } catch {
-    // Fallback: pass ISIN directly to Alpha Vantage SYMBOL_SEARCH
     return searchStock(isin)
   }
 }
