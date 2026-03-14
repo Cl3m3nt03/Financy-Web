@@ -24,17 +24,40 @@ export async function POST(req: NextRequest) {
   const userId = (session.user as any).id
   const body = await req.json()
 
+  const FINANCIAL = ['STOCK', 'CRYPTO', 'PEA', 'CTO']
+  const isFinancial = FINANCIAL.includes(body.type)
+
   const asset = await prisma.asset.create({
     data: {
       userId,
-      name: body.name,
-      type: body.type,
+      name:        body.name,
+      type:        body.type,
       institution: body.institution ?? null,
-      value: parseFloat(body.value),
-      currency: body.currency ?? 'EUR',
-      notes: body.notes ?? null,
+      value:       parseFloat(body.value) || 0,
+      currency:    body.currency ?? 'EUR',
+      notes:       body.notes ?? null,
     },
+    include: { holdings: true },
   })
 
-  return NextResponse.json(asset, { status: 201 })
+  // Create Holding for financial assets when symbol + quantity provided
+  if (isFinancial && body.symbol && body.quantity && body.avgBuyPrice) {
+    await prisma.holding.create({
+      data: {
+        assetId:     asset.id,
+        symbol:      body.symbol,
+        name:        body.name,
+        quantity:    parseFloat(body.quantity),
+        avgBuyPrice: parseFloat(body.avgBuyPrice),
+        currency:    body.currency ?? 'EUR',
+      },
+    })
+  }
+
+  // Return with holdings included
+  const full = await prisma.asset.findUnique({
+    where: { id: asset.id },
+    include: { holdings: true },
+  })
+  return NextResponse.json(full, { status: 201 })
 }

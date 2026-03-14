@@ -200,13 +200,19 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
   // ── Submit
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const payload = {
-      name: form.name,
-      type: form.type,
+    const payload: Record<string, any> = {
+      name:        form.name,
+      type:        form.type,
       institution: form.institution || null,
-      value: isFinancial ? totalValue : parseFloat(form.value),
-      currency: form.currency,
-      notes: form.notes || null,
+      value:       isFinancial ? totalValue : parseFloat(form.value),
+      currency:    form.currency,
+      notes:       form.notes || null,
+    }
+    // Pass holding fields so the API can create the Holding record
+    if (isFinancial && selectedResult) {
+      payload.symbol      = selectedResult.symbol
+      payload.quantity    = parseFloat(quantity)    || 0
+      payload.avgBuyPrice = parseFloat(unitPrice)   || 0
     }
     if (editAsset) {
       await updateAsset.mutateAsync({ id: editAsset.id, data: payload })

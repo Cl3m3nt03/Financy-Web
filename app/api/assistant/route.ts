@@ -80,7 +80,16 @@ export async function POST(req: NextRequest) {
           if (text) controller.enqueue(encoder.encode(text))
         }
       } catch (err: any) {
-        controller.enqueue(encoder.encode(`\n\n[Erreur : ${err.message ?? 'Réessayez.'}]`))
+        const msg: string = err.message ?? ''
+        let friendly = `Erreur : ${msg}`
+        if (msg.includes('429') || msg.includes('quota') || msg.includes('Too Many Requests')) {
+          friendly = '⚠️ Quota Gemini dépassé. Activez la facturation sur [Google AI Studio](https://ai.google.dev/) ou vérifiez votre clé API dans les paramètres de votre projet Google Cloud.'
+        } else if (msg.includes('404') || msg.includes('not found')) {
+          friendly = '⚠️ Modèle Gemini introuvable. Vérifiez le nom du modèle dans la configuration.'
+        } else if (msg.includes('401') || msg.includes('API key')) {
+          friendly = '⚠️ Clé API Gemini invalide. Vérifiez la variable GEMINI_API_KEY dans votre .env.'
+        }
+        controller.enqueue(encoder.encode(friendly))
       } finally {
         controller.close()
       }
