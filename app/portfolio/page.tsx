@@ -7,16 +7,46 @@ import { RebalanceTool } from '@/components/portfolio/rebalance-tool'
 import { PerformanceChart } from '@/components/portfolio/performance-chart'
 import { useAssets } from '@/hooks/use-assets'
 import { useTransactions } from '@/hooks/use-transactions'
-import { usePrices } from '@/hooks/use-prices'
+import { usePricesStream, LiveStatus } from '@/hooks/use-prices-stream'
 import { MOCK_ASSETS } from '@/services/mock-data'
 import { Holding } from '@/types'
 import { formatCurrency, cn } from '@/lib/utils'
-import { TrendingUp, TrendingDown, RefreshCw, LineChart, Gift, Globe, LayoutGrid, Table2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, RefreshCw, LineChart, Gift, Globe, LayoutGrid, Table2, Wifi, WifiOff, Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+
+// ─── Live status badge ────────────────────────────────────────────────────────
+
+function LiveBadge({ status, updatedAt }: { status: LiveStatus; updatedAt: Date | null }) {
+  if (status === 'live') {
+    return (
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        LIVE
+        {updatedAt && (
+          <span className="text-emerald-400/60 ml-1">
+            {updatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </span>
+        )}
+      </div>
+    )
+  }
+  if (status === 'reconnecting') {
+    return (
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-medium">
+        <WifiOff className="w-3 h-3" /> Reconnexion...
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-surface-2 border border-border text-text-muted text-xs font-medium">
+      <Loader2 className="w-3 h-3 animate-spin" /> Connexion...
+    </div>
+  )
+}
 
 // ─── Visual P&L card ──────────────────────────────────────────────────────────
 
-function PnlCard({ holding, assetType }: { holding: any; assetType: string }) {
+function PnlCard({ holding, assetType, flash }: { holding: any; assetType: string; flash?: 'up' | 'down' }) {
   const pnl      = holding.pnl ?? 0
   const pnlPct   = holding.pnlPercent ?? 0
   const invested = holding.quantity * holding.avgBuyPrice
@@ -33,8 +63,18 @@ function PnlCard({ holding, assetType }: { holding: any; assetType: string }) {
   }
   const typeColor = TYPE_COLORS[assetType] ?? '#C9A84C'
 
+  // Flash ring color
+  const flashStyle = flash === 'up'
+    ? 'border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+    : flash === 'down'
+    ? 'border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.3)]'
+    : ''
+
   return (
-    <div className="bg-surface-2 rounded-2xl p-4 border border-border hover:border-accent/40 transition-all group">
+    <div className={cn(
+      'bg-surface-2 rounded-2xl p-4 border transition-all duration-300 group',
+      flash ? flashStyle : 'border-border hover:border-accent/40'
+    )}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2.5">
@@ -72,7 +112,10 @@ function PnlCard({ holding, assetType }: { holding: any; assetType: string }) {
         </div>
         <div>
           <p className="text-text-muted mb-0.5">Cours</p>
-          <p className={cn('font-mono font-semibold', holding.currentPrice ? 'text-text-primary' : 'text-text-muted')}>
+          <p className={cn(
+            'font-mono font-semibold transition-colors duration-300',
+            flash === 'up' ? 'text-emerald-400' : flash === 'down' ? 'text-red-400' : holding.currentPrice ? 'text-text-primary' : 'text-text-muted'
+          )}>
             {holding.currentPrice ? formatCurrency(holding.currentPrice, holding.currency) : '—'}
           </p>
         </div>
@@ -127,7 +170,7 @@ export default function PortfolioPage() {
   const allHoldings: Holding[] = financialAssets.flatMap(a => a.holdings ?? [])
 
   const symbols = allHoldings.map(h => h.symbol)
-  const { data: prices } = usePrices(symbols)
+  const { prices, status: liveStatus, updatedAt, flashing } = usePricesStream(symbols)
 
   const enrichedHoldings = allHoldings.map(h => {
     const priceData = prices?.find(p => p.symbol === h.symbol)
@@ -171,7 +214,9 @@ export default function PortfolioPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header title="Portefeuille" subtitle="Positions, performance et analyse" />
+      <Header title="Portefeuille" subtitle="Positions, performance et analyse">
+        {allHoldings.length > 0 && <LiveBadge status={liveStatus} updatedAt={updatedAt} />}
+      </Header>
 
       <div className="flex-1 p-6 space-y-6 max-w-8xl w-full">
 
@@ -282,7 +327,7 @@ export default function PortfolioPage() {
                   {/* Holdings grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {assetHoldings.map(h => (
-                      <PnlCard key={h.id} holding={h} assetType={asset.type} />
+                      <PnlCard key={h.id} holding={h} assetType={asset.type} flash={flashing[h.symbol]} />
                     ))}
                   </div>
                 </div>

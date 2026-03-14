@@ -7,9 +7,10 @@ import { useQueryClient } from '@tanstack/react-query'
 interface HeaderProps {
   title: string
   subtitle?: string
+  children?: React.ReactNode
 }
 
-export function Header({ title, subtitle }: HeaderProps) {
+export function Header({ title, subtitle, children }: HeaderProps) {
   const { data: session } = useSession()
   const queryClient = useQueryClient()
 
@@ -25,6 +26,7 @@ export function Header({ title, subtitle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-3">
+        {children}
         <button
           onClick={handleRefresh}
           className="w-9 h-9 rounded-xl bg-surface-2 border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface transition-colors"
