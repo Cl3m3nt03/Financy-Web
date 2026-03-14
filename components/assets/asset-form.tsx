@@ -112,6 +112,9 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/i
+  const isISIN  = ISIN_RE.test(searchQuery.trim())
+
   // ── Debounced search
   useEffect(() => {
     if (!isFinancial || searchQuery.length < 1) {
@@ -266,9 +269,16 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
               <div className="space-y-4">
                 {/* Symbol search */}
                 <div ref={searchRef} className="relative">
-                  <label className="block text-sm font-medium text-text-secondary mb-2">
-                    {form.type === 'CRYPTO' ? 'Rechercher une crypto-monnaie' : 'Rechercher un titre boursier'}
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-text-secondary">
+                      {form.type === 'CRYPTO' ? 'Rechercher une crypto-monnaie' : 'Rechercher un titre boursier'}
+                    </label>
+                    {isISIN && (
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-accent/10 text-accent border border-accent/30">
+                        ISIN détecté
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
                     <input
@@ -282,7 +292,7 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
                       placeholder={
                         form.type === 'CRYPTO'
                           ? 'Bitcoin, ETH, Solana...'
-                          : 'Apple, AAPL, LVMH, MC.PA...'
+                          : 'Apple, AAPL, MC.PA, FR0000131104…'
                       }
                     />
                     {isSearching && (
@@ -322,6 +332,11 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
                                 {result.marketCapRank && (
                                   <span className="text-xs text-text-muted bg-surface-2 px-1.5 py-0.5 rounded">
                                     #{result.marketCapRank}
+                                  </span>
+                                )}
+                                {(result as any).isin && (
+                                  <span className="text-xs text-accent bg-accent/10 px-1.5 py-0.5 rounded font-mono">
+                                    {(result as any).isin}
                                   </span>
                                 )}
                               </div>

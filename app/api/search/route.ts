@@ -60,6 +60,35 @@ const POPULAR_STOCKS: SearchResult[] = [
   { symbol: 'QQQ',     name: 'Invesco QQQ Trust (NASDAQ-100)', exchange: 'NASDAQ' },
 ]
 
+// ─── ISIN detection & resolution ───────────────────────────────────────────────
+
+const ISIN_RE = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/
+
+async function resolveISIN(isin: string): Promise<SearchResult[]> {
+  try {
+    // OpenFIGI: free API, no key required for basic use
+    const res = await fetch('https://api.openfigi.com/v3/mapping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([{ idType: 'ID_ISIN', idValue: isin }]),
+      next: { revalidate: 0 },
+    })
+    if (!res.ok) throw new Error('OpenFIGI error')
+    const data = await res.json()
+    const matches: any[] = data[0]?.data ?? []
+    if (matches.length === 0) throw new Error('No FIGI match')
+    return matches.slice(0, 8).map((m: any) => ({
+      symbol:   m.ticker ?? isin,
+      name:     m.name   ?? isin,
+      exchange: m.exchCode ?? '',
+      isin,
+    }))
+  } catch {
+    // Fallback: pass ISIN directly to Alpha Vantage SYMBOL_SEARCH
+    return searchStock(isin)
+  }
+}
+
 // ─── Search handlers ────────────────────────────────────────────────────────────
 
 async function searchCrypto(q: string): Promise<SearchResult[]> {
@@ -124,10 +153,16 @@ async function searchStock(q: string): Promise<SearchResult[]> {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const q = searchParams.get('q')?.trim() ?? ''
+  const q    = searchParams.get('q')?.trim() ?? ''
   const type = searchParams.get('type') ?? 'STOCK'
 
   if (q.length < 1) return NextResponse.json([])
+
+  // ISIN takes priority for stock/ETF types
+  if ((type === 'STOCK' || type === 'PEA' || type === 'CTO') && ISIN_RE.test(q.toUpperCase())) {
+    const results = await resolveISIN(q.toUpperCase())
+    return NextResponse.json(results)
+  }
 
   if (type === 'CRYPTO') {
     const results = await searchCrypto(q)
