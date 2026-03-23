@@ -27,6 +27,7 @@ model User {
   budgetItems        BudgetItem[]
   budgetIncome       BudgetIncome?
   loginAttempts      LoginAttempt[]
+  bankConnections    BankConnection[]
 }
 
 model LoginAttempt {
@@ -135,6 +136,37 @@ model PriceAlert {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BankConnection {
+  id              String    @id @default(cuid())
+  userId          String
+  institutionId   String    // Nordigen institution ID (ex: "REVOLUT_REVOGB21")
+  institutionName String
+  requisitionId   String    @unique  // Nordigen requisition ID
+  status          String    @default("PENDING") // PENDING | LINKED | EXPIRED | ERROR
+  lastSyncAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts BankAccount[]
+}
+
+model BankAccount {
+  id               String   @id @default(cuid())
+  connectionId     String
+  nordigenId       String   @unique  // Nordigen account ID
+  iban             String?
+  name             String?
+  currency         String   @default("EUR")
+  balance          Float    @default(0)
+  balanceType      String?  // "closingBooked", "interimAvailable"
+  linkedAssetId    String?  // si lié à un Asset existant
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  connection BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 }
 
 model Goal {

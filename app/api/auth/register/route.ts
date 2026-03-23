@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  await sendOtpEmail(email, code)
+  const emailSent = await sendOtpEmail(email, code)
 
-  return NextResponse.json({ success: true }, { status: 201 })
+  return NextResponse.json({ success: true, emailSent }, { status: 201 })
 }

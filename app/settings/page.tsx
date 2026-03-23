@@ -4,8 +4,9 @@ import { useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Key, Database, Shield, Lock, Eye, EyeOff, Check, AlertCircle, Loader2, Mail, Bell } from 'lucide-react'
+import { Key, Database, Shield, Lock, Eye, EyeOff, Check, AlertCircle, Loader2, Mail, Bell, Building2 } from 'lucide-react'
 import { PriceAlertsSection } from '@/components/settings/price-alerts'
+import { BankConnections } from '@/components/settings/bank-connections'
 
 export default function SettingsPage() {
   const { data: session } = useSession()
@@ -252,6 +253,19 @@ export default function SettingsPage() {
                 Mettre à jour le mot de passe
               </button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* ── Bank Connections ─────────────────────────────────────────── */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-text-muted" />
+              <CardTitle>Comptes bancaires connectés</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <BankConnections />
           </CardContent>
         </Card>
 
