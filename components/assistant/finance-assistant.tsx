@@ -97,8 +97,9 @@ export function FinanceAssistant() {
       <button
         onClick={() => setOpen(o => !o)}
         className={cn(
-          'fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300',
+          'fixed z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300',
           'bg-accent hover:bg-accent-dark text-background',
+          'bottom-[5.5rem] right-4 lg:bottom-6 lg:right-6',
           open && 'rotate-12 scale-95',
         )}
         aria-label="Assistant financier"
@@ -111,9 +112,14 @@ export function FinanceAssistant() {
 
       {/* ── Chat panel ───────────────────────────────────────────── */}
       <div className={cn(
-        'fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] flex flex-col',
+        'fixed z-50 flex flex-col',
         'bg-surface border border-border rounded-2xl shadow-2xl',
-        'transition-all duration-300 origin-bottom-right',
+        'transition-all duration-300',
+        /* mobile: quasi plein écran, ancré au-dessus de la bottom nav */
+        'bottom-[10rem] left-3 right-3 lg:left-auto',
+        /* desktop: floating compact en bas à droite */
+        'lg:bottom-24 lg:right-6 lg:w-[380px]',
+        'origin-bottom-right',
         open ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none',
       )}>
 
