@@ -218,10 +218,10 @@ export default function PortfolioPage() {
         {allHoldings.length > 0 && <LiveBadge status={liveStatus} updatedAt={updatedAt} />}
       </Header>
 
-      <div className="flex-1 p-6 space-y-6 max-w-8xl w-full">
+      <div className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-8xl w-full overflow-x-hidden">
 
         {/* Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card>
             <CardContent className="pt-6">
               <p className="text-text-secondary text-sm mb-1">Valeur portefeuille</p>
@@ -256,18 +256,21 @@ export default function PortfolioPage() {
           </Card>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-surface border border-border rounded-xl p-1 w-fit">
-          {TABS.map(t => {
-            const Icon = t.icon
-            return (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={cn('flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors',
-                  tab === t.id ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-text-primary')}>
-                <Icon className="w-3.5 h-3.5" /> {t.label}
-              </button>
-            )
-          })}
+        {/* Tabs — scrollable sur mobile */}
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0 pb-1">
+          <div className="flex gap-1 bg-surface border border-border rounded-xl p-1 w-max">
+            {TABS.map(t => {
+              const Icon = t.icon
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  className={cn('flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
+                    tab === t.id ? 'bg-accent/10 text-accent' : 'text-text-muted hover:text-text-primary')}>
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{t.label}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* Tab: Positions */}

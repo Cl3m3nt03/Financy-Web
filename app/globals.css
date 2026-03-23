@@ -48,6 +48,11 @@ body {
   outline: none;
 }
 
+/* Padding bas du contenu pour laisser la place à la bottom nav + safe area iPhone */
+.pb-nav {
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+}
+
 @media print {
   aside, nav, .print\:hidden { display: none !important; }
   body { background: white !important; color: black !important; }

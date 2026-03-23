@@ -17,7 +17,10 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-surface/95 backdrop-blur-md border-t border-border">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-surface border-t border-border"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       <div className="flex h-14">
         {navItems.map(item => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
@@ -36,8 +39,6 @@ export function BottomNav() {
           )
         })}
       </div>
-      {/* Safe area iPhone home indicator */}
-      <div style={{ height: 'env(safe-area-inset-bottom)' }} />
     </nav>
   )
 }
