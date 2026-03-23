@@ -34,7 +34,7 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-surface border-r border-border flex flex-col z-50">
+    <aside className="fixed left-0 top-0 h-full w-64 bg-surface border-r border-border hidden lg:flex flex-col z-50">
       <div className="flex items-center gap-3 px-6 py-6 border-b border-border">
         <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
           <TrendingUpIcon className="w-4 h-4 text-white" />

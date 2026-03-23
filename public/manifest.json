@@ -1,12 +1,14 @@
 {
-  "name": "Wealth Tracker",
+  "name": "Financy",
   "short_name": "Financy",
   "description": "Gérez votre patrimoine personnel",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0A0A0A",
   "theme_color": "#C9A84C",
   "orientation": "portrait-primary",
+  "lang": "fr",
   "icons": [
     {
       "src": "/icon-192.png",
