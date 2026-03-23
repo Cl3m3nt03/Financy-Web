@@ -141,9 +141,12 @@ model PriceAlert {
 model BankConnection {
   id              String    @id @default(cuid())
   userId          String
-  institutionId   String    // Nordigen institution ID (ex: "REVOLUT_REVOGB21")
-  institutionName String
-  requisitionId   String    @unique  // Nordigen requisition ID
+  institutionId   String?
+  institutionName String?
+  tinkUserId      String?   // external user ID passed to Tink
+  accessToken     String?   // Tink user access token
+  refreshToken    String?   // Tink refresh token
+  tokenExpiresAt  DateTime?
   status          String    @default("PENDING") // PENDING | LINKED | EXPIRED | ERROR
   lastSyncAt      DateTime?
   createdAt       DateTime  @default(now())
