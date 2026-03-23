@@ -102,7 +102,7 @@ export default function TransactionsPage() {
     for (const t of transactions ?? []) {
       if (t.tags) t.tags.split(',').map(s => s.trim()).filter(Boolean).forEach(tag => set.add(tag))
     }
-    return [...set].sort()
+    return Array.from(set).sort()
   }, [transactions])
 
   const filtered = useMemo(() =>
