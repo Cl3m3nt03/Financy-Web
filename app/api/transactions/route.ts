@@ -15,6 +15,7 @@ const schema = z.object({
   currency:  z.string().default('EUR'),
   date:      z.string(),
   notes:     z.string().optional(),
+  tags:      z.string().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { type, symbol, holdingId, quantity, price, fees, currency, date, notes } = parsed.data
+  const { type, symbol, holdingId, quantity, price, fees, currency, date, notes, tags } = parsed.data
 
   const transaction = await prisma.transaction.create({
     data: {
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
       currency,
       date:  new Date(date),
       notes: notes ?? null,
+      tags:  tags  ?? null,
     },
   })
 

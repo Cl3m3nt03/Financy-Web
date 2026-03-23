@@ -1,6 +1,6 @@
 'use client'
 
-import { Wallet, TrendingUp, PiggyBank, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Wallet, TrendingUp, PiggyBank, BarChart3, ArrowUpRight, ArrowDownRight, FileDown } from 'lucide-react'
 import Link from 'next/link'
 import { Header } from '@/components/layout/header'
 import { StatCard } from '@/components/dashboard/stat-card'
@@ -10,6 +10,7 @@ import { HoldingsTable } from '@/components/dashboard/holdings-table'
 import { HealthScore } from '@/components/dashboard/health-score'
 import { Onboarding } from '@/components/dashboard/onboarding'
 import { SankeyChart } from '@/components/dashboard/sankey-chart'
+import { WealthProjection } from '@/components/dashboard/wealth-projection'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePortfolioStats } from '@/hooks/use-portfolio'
 import { useAssets } from '@/hooks/use-assets'
@@ -72,7 +73,15 @@ export default function DashboardPage() {
       <Header
         title="Tableau de bord"
         subtitle={today.charAt(0).toUpperCase() + today.slice(1)}
-      />
+      >
+        <Link
+          href="/report"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-2 border border-border text-text-secondary hover:text-text-primary hover:bg-surface transition-colors text-xs font-medium"
+        >
+          <FileDown className="w-3.5 h-3.5" />
+          Export PDF
+        </Link>
+      </Header>
 
       {/* Onboarding si aucun actif réel */}
       {!statsLoading && !hasRealAssets && <Onboarding />}
@@ -130,6 +139,9 @@ export default function DashboardPage() {
           </div>
           <HealthScore breakdown={displayStats.breakdown} totalValue={displayStats.totalValue} />
         </div>
+
+        {/* Projection patrimoniale */}
+        <WealthProjection currentValue={displayStats.totalValue} />
 
         {/* Sankey — flux patrimoniaux */}
         <SankeyChart assets={displayAssets} />

@@ -49,6 +49,7 @@ export interface Transaction {
   currency: string
   date: string
   notes?: string | null
+  tags?: string | null
 }
 
 export interface PortfolioSnapshot {

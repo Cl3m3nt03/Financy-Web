@@ -17,6 +17,16 @@ async function createTransaction(data: Partial<Transaction>): Promise<Transactio
   return res.json()
 }
 
+async function updateTransaction({ id, data }: { id: string; data: Partial<Transaction> }): Promise<Transaction> {
+  const res = await fetch(`/api/transactions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error('Failed to update transaction')
+  return res.json()
+}
+
 async function deleteTransaction(id: string): Promise<void> {
   const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('Failed to delete transaction')
@@ -36,6 +46,23 @@ export function useCreateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
     },
+  })
+}
+
+export function useUpdateTransaction() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: updateTransaction,
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['transactions'] })
+      const prev = queryClient.getQueryData<Transaction[]>(['transactions'])
+      queryClient.setQueryData<Transaction[]>(['transactions'], old =>
+        old ? old.map(t => t.id === id ? { ...t, ...data } : t) : old
+      )
+      return { prev }
+    },
+    onError: (_e, _v, ctx: any) => queryClient.setQueryData(['transactions'], ctx?.prev),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   })
 }
 

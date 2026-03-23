@@ -8,9 +8,10 @@ interface HeaderProps {
   title: string
   subtitle?: string
   children?: React.ReactNode
+  alertCount?: number
 }
 
-export function Header({ title, subtitle, children }: HeaderProps) {
+export function Header({ title, subtitle, children, alertCount }: HeaderProps) {
   const { data: session } = useSession()
   const queryClient = useQueryClient()
 
@@ -35,7 +36,13 @@ export function Header({ title, subtitle, children }: HeaderProps) {
         </button>
         <button className="w-9 h-9 rounded-xl bg-surface-2 border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface transition-colors relative">
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
+          {(alertCount ?? 0) > 0 ? (
+            <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+              {alertCount}
+            </span>
+          ) : (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
+          )}
         </button>
         <div className="flex items-center gap-2 pl-3 border-l border-border">
           <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center">

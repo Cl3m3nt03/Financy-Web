@@ -6,7 +6,7 @@ import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency, cn } from '@/lib/utils'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Sankey } from 'recharts'
-import { Plus, Trash2, Wallet, ShoppingCart, PiggyBank, TrendingUp, AlertCircle, Check, CalendarDays } from 'lucide-react'
+import { Plus, Trash2, Wallet, ShoppingCart, PiggyBank, TrendingUp, AlertCircle, Check, CalendarDays, Bell, X } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -305,6 +305,14 @@ export default function BudgetPage() {
     updateItem.mutate({ id, data: { amount } })
   }
 
+  const alertCount = income > 0 ? CATEGORIES.reduce((n, cat) => {
+    const cfg  = CATEGORY_CONFIG[cat]
+    const diff = pcts[cat] - cfg.target
+    if (cat === 'savings' && pcts[cat] < cfg.target - 5) return n + 1
+    if (cat !== 'savings' && diff > 0) return n + 1
+    return n
+  }, 0) : 0
+
   if (isLoading || seeded.isLoading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -316,7 +324,7 @@ export default function BudgetPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header title="Budget" subtitle="Regle des 50/30/20 et flux mensuel" />
+      <Header title="Budget" subtitle="Regle des 50/30/20 et flux mensuel" alertCount={alertCount} />
 
       <div className="flex-1 p-6 space-y-6 max-w-7xl w-full">
 
@@ -348,6 +356,42 @@ export default function BudgetPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Budget alerts */}
+        {income > 0 && (() => {
+          const alerts: { cat: Category; msg: string; severity: 'warn' | 'error' }[] = []
+          for (const cat of CATEGORIES) {
+            const cfg = CATEGORY_CONFIG[cat]
+            const diff = pcts[cat] - cfg.target
+            if (cat === 'savings' && pcts[cat] < cfg.target - 5)
+              alerts.push({ cat, msg: `Épargne à ${pcts[cat].toFixed(0)}% — objectif ${cfg.target}%`, severity: 'warn' })
+            else if (cat !== 'savings' && diff > 10)
+              alerts.push({ cat, msg: `${cfg.label} à ${pcts[cat].toFixed(0)}% — dépasse l'objectif de ${diff.toFixed(0)}pts`, severity: 'error' })
+            else if (cat !== 'savings' && diff > 0)
+              alerts.push({ cat, msg: `${cfg.label} à ${pcts[cat].toFixed(0)}% — légèrement au-dessus de l'objectif`, severity: 'warn' })
+          }
+          if (alerts.length === 0) return null
+          return (
+            <div className="space-y-2">
+              {alerts.map(a => {
+                const cfg = CATEGORY_CONFIG[a.cat]
+                const Icon = cfg.icon
+                return (
+                  <div key={a.cat} className={cn(
+                    'flex items-center gap-3 px-4 py-3 rounded-xl border text-sm',
+                    a.severity === 'error'
+                      ? 'bg-red-500/5 border-red-500/20 text-red-400'
+                      : 'bg-amber-500/5 border-amber-500/20 text-amber-400'
+                  )}>
+                    <Bell className="w-4 h-4 shrink-0" />
+                    <Icon className="w-4 h-4 shrink-0" style={{ color: cfg.color }} />
+                    <span>{a.msg}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
 
         {/* Tabs */}
         <div className="flex gap-1 bg-surface border border-border rounded-xl p-1 w-fit">

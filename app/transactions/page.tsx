@@ -6,9 +6,77 @@ import { Card, CardContent } from '@/components/ui/card'
 import { TransactionForm } from '@/components/transactions/transaction-form'
 import { useTransactions, useDeleteTransaction } from '@/hooks/use-transactions'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Trash2, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Gift, Filter, Upload } from 'lucide-react'
+import { Plus, Trash2, TrendingUp, TrendingDown, ArrowDownCircle, ArrowUpCircle, Gift, Filter, Upload, Tag, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CsvImportModal } from '@/components/transactions/csv-import-modal'
+import { useUpdateTransaction } from '@/hooks/use-transactions'
+
+const TAG_COLORS = [
+  'bg-blue-500/15 text-blue-400 border-blue-500/20',
+  'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+  'bg-purple-500/15 text-purple-400 border-purple-500/20',
+  'bg-amber-500/15 text-amber-400 border-amber-500/20',
+  'bg-pink-500/15 text-pink-400 border-pink-500/20',
+  'bg-cyan-500/15 text-cyan-400 border-cyan-500/20',
+]
+
+function tagColor(tag: string) {
+  let hash = 0
+  for (const c of tag) hash = (hash * 31 + c.charCodeAt(0)) & 0xffff
+  return TAG_COLORS[hash % TAG_COLORS.length]
+}
+
+function TagCell({ txId, rawTags }: { txId: string; rawTags: string | null | undefined }) {
+  const [editing, setEditing] = useState(false)
+  const [input, setInput]     = useState('')
+  const updateTx              = useUpdateTransaction()
+  const tags = rawTags ? rawTags.split(',').map(t => t.trim()).filter(Boolean) : []
+
+  function addTag() {
+    const trimmed = input.trim()
+    if (!trimmed || tags.includes(trimmed)) { setInput(''); return }
+    const next = [...tags, trimmed].join(',')
+    updateTx.mutate({ id: txId, data: { tags: next } })
+    setInput('')
+  }
+
+  function removeTag(tag: string) {
+    const next = tags.filter(t => t !== tag).join(',')
+    updateTx.mutate({ id: txId, data: { tags: next || null } })
+  }
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap min-w-[80px]">
+      {tags.map(tag => (
+        <span key={tag} className={cn('inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium border', tagColor(tag))}>
+          {tag}
+          <button onClick={() => removeTag(tag)} className="opacity-60 hover:opacity-100 ml-0.5">
+            <X className="w-2.5 h-2.5" />
+          </button>
+        </span>
+      ))}
+      {editing ? (
+        <input
+          autoFocus
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') addTag(); if (e.key === 'Escape') setEditing(false) }}
+          onBlur={() => { addTag(); setEditing(false) }}
+          className="w-20 bg-surface-2 border border-accent/40 rounded-md px-1.5 py-0.5 text-[10px] text-text-primary focus:outline-none"
+          placeholder="tag…"
+        />
+      ) : (
+        <button
+          onClick={() => setEditing(true)}
+          className="text-text-muted hover:text-accent transition-colors p-0.5 rounded"
+          title="Ajouter un tag"
+        >
+          <Tag className="w-3 h-3" />
+        </button>
+      )}
+    </div>
+  )
+}
 
 const TYPE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
   BUY:        { label: 'Achat',     icon: TrendingUp,      color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
@@ -26,11 +94,27 @@ export default function TransactionsPage() {
   const [showForm, setShowForm] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [filter, setFilter] = useState('ALL')
+  const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
+  const allTags = useMemo(() => {
+    const set = new Set<string>()
+    for (const t of transactions ?? []) {
+      if (t.tags) t.tags.split(',').map(s => s.trim()).filter(Boolean).forEach(tag => set.add(tag))
+    }
+    return [...set].sort()
+  }, [transactions])
+
   const filtered = useMemo(() =>
-    (transactions ?? []).filter(t => filter === 'ALL' || t.type === filter),
-    [transactions, filter]
+    (transactions ?? []).filter(t => {
+      if (filter !== 'ALL' && t.type !== filter) return false
+      if (tagFilter) {
+        const tags = t.tags ? t.tags.split(',').map(s => s.trim()) : []
+        if (!tags.includes(tagFilter)) return false
+      }
+      return true
+    }),
+    [transactions, filter, tagFilter]
   )
 
   // Stats
@@ -82,6 +166,23 @@ export default function TransactionsPage() {
             ))}
           </div>
 
+          {allTags.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Tag className="w-3 h-3 text-text-muted shrink-0" />
+              {allTags.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setTagFilter(t => t === tag ? null : tag)}
+                  className={cn(
+                    'px-2 py-0.5 rounded-md text-[10px] font-medium border transition-colors',
+                    tagFilter === tag ? tagColor(tag) : 'border-border text-text-muted hover:text-text-primary'
+                  )}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <button onClick={() => setShowImport(true)}
               className="flex items-center gap-2 border border-border hover:border-accent/50 text-text-secondary hover:text-accent px-4 py-2 rounded-xl text-sm font-medium transition-colors">
@@ -115,7 +216,8 @@ export default function TransactionsPage() {
                       <th className="text-right px-4 py-3 font-medium">Prix</th>
                       <th className="text-right px-4 py-3 font-medium">Frais</th>
                       <th className="text-right px-4 py-3 font-medium">Total</th>
-                      <th className="text-left px-4 py-3 font-medium">Date</th>
+                      <th className="text-left px-4 py-3 font-medium hidden sm:table-cell">Date</th>
+                      <th className="text-left px-4 py-3 font-medium hidden md:table-cell">Tags</th>
                       <th className="px-4 py-3" />
                     </tr>
                   </thead>
@@ -148,8 +250,11 @@ export default function TransactionsPage() {
                           <td className={cn('px-4 py-3.5 text-right font-mono font-semibold', cfg?.color)}>
                             {tx.type === 'SELL' || tx.type === 'WITHDRAWAL' ? '-' : '+'}{formatCurrency(Math.abs(total), tx.currency)}
                           </td>
-                          <td className="px-4 py-3.5 text-text-muted text-xs">
+                          <td className="px-4 py-3.5 text-text-muted text-xs hidden sm:table-cell">
                             {new Date(tx.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+                          <td className="px-4 py-3.5 hidden md:table-cell">
+                            <TagCell txId={tx.id} rawTags={tx.tags} />
                           </td>
                           <td className="px-4 py-3.5">
                             {deleteId === tx.id ? (
