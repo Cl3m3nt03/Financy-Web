@@ -13,6 +13,7 @@ import { Holding } from '@/types'
 import { formatCurrency, cn } from '@/lib/utils'
 import { TrendingUp, TrendingDown, RefreshCw, LineChart, Gift, Globe, LayoutGrid, Table2, Wifi, WifiOff, Loader2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
 // ─── Live status badge ────────────────────────────────────────────────────────
 
@@ -367,39 +368,111 @@ export default function PortfolioPage() {
         )}
 
         {/* Tab: Dividends */}
-        {tab === 'dividends' && (
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Gift className="w-4 h-4 text-accent" /> Dividendes reçus</CardTitle></CardHeader>
-            <CardContent className="p-0">
+        {tab === 'dividends' && (() => {
+          const now = new Date()
+          const thisYear = now.getFullYear()
+          const divThisYear = dividends.filter(d => new Date(d.date).getFullYear() === thisYear)
+          const totalThisYear = divThisYear.reduce((s, d) => s + d.price, 0)
+          const monthlyAvg = totalThisYear / 12
+
+          // Group by month for chart (last 12 months)
+          const byMonth: Record<string, number> = {}
+          for (let i = 11; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+            byMonth[key] = 0
+          }
+          for (const d of dividends) {
+            const dt = new Date(d.date)
+            const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`
+            if (key in byMonth) byMonth[key] = (byMonth[key] ?? 0) + d.price
+          }
+          const chartData = Object.entries(byMonth).map(([k, v]) => ({
+            month: new Date(k + '-01').toLocaleDateString('fr-FR', { month: 'short' }),
+            value: v,
+          }))
+
+          return (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <Card>
+                  <CardContent className="pt-4 pb-3">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Cette année</p>
+                    <p className="text-xl font-bold font-mono text-accent">{formatCurrency(totalThisYear)}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 pb-3">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Moy. mensuelle</p>
+                    <p className="text-xl font-bold font-mono text-text-primary">{formatCurrency(monthlyAvg)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="hidden sm:block">
+                  <CardContent className="pt-4 pb-3">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Total historique</p>
+                    <p className="text-xl font-bold font-mono text-text-primary">{formatCurrency(totalDividends)}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
               {dividends.length === 0 ? (
-                <p className="text-text-muted text-sm text-center py-10">Aucun dividende enregistré. Ajoutez-les dans Transactions.</p>
+                <Card><CardContent><p className="text-text-muted text-sm text-center py-8">Aucun dividende enregistré. Ajoutez-les dans Transactions.</p></CardContent></Card>
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-text-muted text-xs">
-                      <th className="text-left px-5 py-3 font-medium">Date</th>
-                      <th className="text-left px-4 py-3 font-medium">Symbole</th>
-                      <th className="text-right px-5 py-3 font-medium">Montant</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dividends.map(d => (
-                      <tr key={d.id} className="border-b border-border/50 hover:bg-surface-2/50">
-                        <td className="px-5 py-3 text-text-muted text-xs">{new Date(d.date).toLocaleDateString('fr-FR')}</td>
-                        <td className="px-4 py-3 font-mono font-medium text-text-primary">{d.symbol ?? '—'}</td>
-                        <td className="px-5 py-3 text-right font-mono font-semibold text-accent">+{formatCurrency(d.price, d.currency)}</td>
-                      </tr>
-                    ))}
-                    <tr className="bg-surface-2/30">
-                      <td colSpan={2} className="px-5 py-3 text-text-secondary text-sm font-semibold">Total</td>
-                      <td className="px-5 py-3 text-right font-mono font-bold text-accent">{formatCurrency(totalDividends)}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                <>
+                  {/* Monthly chart */}
+                  <Card>
+                    <CardHeader><CardTitle className="text-sm">Dividendes par mois (12 derniers mois)</CardTitle></CardHeader>
+                    <CardContent className="px-2 pb-4">
+                      <ResponsiveContainer width="100%" height={160}>
+                        <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                          <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 10 }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717A', fontSize: 10 }}
+                            tickFormatter={v => v === 0 ? '' : formatCurrency(v, 'EUR', true)} width={52} />
+                          <Tooltip
+                            contentStyle={{ background: '#1C1C1E', border: '1px solid #2C2C2E', borderRadius: 10 }}
+                            formatter={(v: number) => [formatCurrency(v), 'Dividendes']}
+                            labelStyle={{ color: '#A1A1AA', fontSize: 11 }}
+                          />
+                          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                            {chartData.map((entry, i) => (
+                              <Cell key={i} fill={entry.value > 0 ? '#C9A84C' : '#27272A'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Table */}
+                  <Card>
+                    <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Gift className="w-4 h-4 text-accent" /> Historique</CardTitle></CardHeader>
+                    <CardContent className="p-0">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-text-muted text-xs">
+                            <th className="text-left px-5 py-3 font-medium">Date</th>
+                            <th className="text-left px-4 py-3 font-medium">Symbole</th>
+                            <th className="text-right px-5 py-3 font-medium">Montant</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {dividends.map(d => (
+                            <tr key={d.id} className="border-b border-border/50 hover:bg-surface-2/50">
+                              <td className="px-5 py-3 text-text-muted text-xs">{new Date(d.date).toLocaleDateString('fr-FR')}</td>
+                              <td className="px-4 py-3 font-mono font-medium text-text-primary">{d.symbol ?? '—'}</td>
+                              <td className="px-5 py-3 text-right font-mono font-semibold text-accent">+{formatCurrency(d.price, d.currency)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </CardContent>
+                  </Card>
+                </>
               )}
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          )
+        })()}
 
         {/* Tab: Currencies */}
         {tab === 'currencies' && (

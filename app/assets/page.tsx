@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Building2, Wallet, TrendingUp, Bitcoin, PiggyBank, Package } from 'lucide-react'
+import { Plus, Pencil, Trash2, Building2, Wallet, TrendingUp, Bitcoin, PiggyBank, Package, Home } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -136,6 +136,43 @@ export default function AssetsPage() {
                       {asset.notes && (
                         <p className="text-text-muted text-xs mt-3 line-clamp-2">{asset.notes}</p>
                       )}
+
+                      {/* Immobilier: rental yield */}
+                      {asset.type === 'REAL_ESTATE' && (() => {
+                        const rentMatch = asset.notes?.match(/loyer[:\s]+(\d[\d\s]*)/i)
+                        const monthlyRent = rentMatch ? parseFloat(rentMatch[1].replace(/\s/g, '')) : null
+                        const grossYield = monthlyRent && asset.value > 0
+                          ? (monthlyRent * 12 / asset.value) * 100
+                          : null
+                        return (
+                          <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-[10px] text-text-muted mb-1">
+                              <Home className="w-3 h-3" />
+                              <span className="font-medium uppercase tracking-wider">Immobilier</span>
+                            </div>
+                            {monthlyRent ? (
+                              <>
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-text-muted">Loyer mensuel</span>
+                                  <span className="font-mono font-semibold text-emerald-400">{formatCurrency(monthlyRent, asset.currency, true)}/mois</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-text-muted">Rendement brut</span>
+                                  <span className="font-mono font-semibold text-accent">{grossYield?.toFixed(2)}%</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-text-muted">Revenu annuel</span>
+                                  <span className="font-mono text-text-secondary">{formatCurrency(monthlyRent * 12, asset.currency, true)}</span>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="text-[10px] text-text-muted italic">
+                                Ajoutez &quot;loyer: XXX&quot; dans les notes pour voir le rendement.
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })()}
 
                       {/* Holdings mini list */}
                       {asset.holdings && asset.holdings.length > 0 && (

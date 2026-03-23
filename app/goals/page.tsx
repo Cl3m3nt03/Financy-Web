@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
-import { Plus, Trash2, Target, Calendar, TrendingUp } from 'lucide-react'
+import { Plus, Trash2, Target, Calendar, TrendingUp, Sparkles } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 import { usePortfolioStats } from '@/hooks/use-portfolio'
 import { MOCK_PORTFOLIO_STATS } from '@/services/mock-data'
@@ -143,6 +143,27 @@ export default function GoalsPage() {
                       {isReached ? '✓ Objectif atteint !' : formatCurrency(remaining, goal.currency, true)}
                     </span>
                   </div>
+
+                  {/* Monthly savings calculator */}
+                  {!isReached && daysLeft !== null && daysLeft > 0 && (() => {
+                    const months = Math.max(1, Math.round(daysLeft / 30))
+                    const r = 0.07 / 12 // 7% annuel
+                    const pv = totalValue
+                    const fv = goal.targetValue
+                    const rn = Math.pow(1 + r, months)
+                    const pmt = r > 0 ? (fv - pv * rn) * r / (rn - 1) : (fv - pv) / months
+                    if (pmt <= 0) return null
+                    return (
+                      <div className="mt-3 pt-3 border-t border-border flex items-start gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
+                        <p className="text-xs text-text-muted leading-relaxed">
+                          À 7%/an, épargnez{' '}
+                          <span className="font-semibold text-accent font-mono">{formatCurrency(pmt, goal.currency, true)}/mois</span>
+                          {' '}pour atteindre cet objectif en {months} mois.
+                        </p>
+                      </div>
+                    )
+                  })()}
 
                   {goal.notes && (
                     <p className="text-text-muted text-xs mt-3 pt-3 border-t border-border">{goal.notes}</p>

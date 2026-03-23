@@ -11,6 +11,8 @@ import { HealthScore } from '@/components/dashboard/health-score'
 import { Onboarding } from '@/components/dashboard/onboarding'
 import { SankeyChart } from '@/components/dashboard/sankey-chart'
 import { WealthProjection } from '@/components/dashboard/wealth-projection'
+import { PassiveIncome } from '@/components/dashboard/passive-income'
+import { useTransactions } from '@/hooks/use-transactions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePortfolioStats } from '@/hooks/use-portfolio'
 import { useAssets } from '@/hooks/use-assets'
@@ -56,6 +58,7 @@ function MonthlyDelta({ history }: { history: { date: string; value: number }[] 
 export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = usePortfolioStats()
   const { data: assets } = useAssets()
+  const { data: transactions } = useTransactions()
 
   const displayStats = stats ?? MOCK_PORTFOLIO_STATS
   const displayAssets = assets ?? MOCK_ASSETS
@@ -132,12 +135,15 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Graphique + score de santé */}
+        {/* Graphique + score de santé + revenus passifs */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
             <WealthChart data={displayStats.history} />
           </div>
-          <HealthScore breakdown={displayStats.breakdown} totalValue={displayStats.totalValue} />
+          <div className="flex flex-col gap-4">
+            <HealthScore breakdown={displayStats.breakdown} totalValue={displayStats.totalValue} />
+            <PassiveIncome transactions={transactions ?? []} assets={displayAssets} />
+          </div>
         </div>
 
         {/* Projection patrimoniale */}
