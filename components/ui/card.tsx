@@ -8,7 +8,7 @@ export function Card({ children, className, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'bg-surface border border-border rounded-2xl',
+        'bg-surface border border-border rounded-xl shadow-card',
         className
       )}
       {...props}
@@ -20,7 +20,7 @@ export function Card({ children, className, ...props }: CardProps) {
 
 export function CardHeader({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('px-6 pt-6 pb-0', className)}>
+    <div className={cn('px-5 pt-5 pb-0', className)}>
       {children}
     </div>
   )
@@ -28,7 +28,7 @@ export function CardHeader({ children, className }: { children: React.ReactNode;
 
 export function CardContent({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('px-6 py-6', className)}>
+    <div className={cn('px-5 py-5', className)}>
       {children}
     </div>
   )
@@ -36,7 +36,7 @@ export function CardContent({ children, className }: { children: React.ReactNode
 
 export function CardTitle({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <h3 className={cn('text-sm font-medium text-text-secondary', className)}>
+    <h3 className={cn('text-sm font-medium text-text-secondary tracking-wide', className)}>
       {children}
     </h3>
   )

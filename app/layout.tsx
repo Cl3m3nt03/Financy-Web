@@ -1,9 +1,21 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Geologica, Roboto_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/lib/providers'
 
-const inter = Inter({ subsets: ['latin'] })
+const geologica = Geologica({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-geologica',
+  display: 'swap',
+})
+
+const robotoMono = Roboto_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-mono',
+  display: 'swap',
+})
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -11,11 +23,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#09090B',
+  themeColor: '#08090A',
 }
 
 export const metadata: Metadata = {
-  title: 'Wealth Tracker',
+  title: 'Financy',
   description: 'Gérez votre patrimoine personnel',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -30,7 +42,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="fr" className={`${geologica.variable} ${robotoMono.variable}`}>
       <head>
         {/* Prevent flash of wrong theme */}
         <script dangerouslySetInnerHTML={{ __html: `
@@ -40,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           } catch(e) {}
         ` }} />
       </head>
-      <body className={`${inter.className} bg-background text-text-primary antialiased`}>
+      <body className="font-sans bg-background text-text-primary antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

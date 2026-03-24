@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Accueil' },
-  { href: '/assets', icon: Wallet, label: 'Actifs' },
-  { href: '/portfolio', icon: LineChart, label: 'Bourse' },
-  { href: '/goals', icon: Target, label: 'Objectifs' },
-  { href: '/settings', icon: Settings, label: 'Réglages' },
+  { href: '/assets',    icon: Wallet,          label: 'Actifs'  },
+  { href: '/portfolio', icon: LineChart,        label: 'Bourse'  },
+  { href: '/goals',     icon: Target,          label: 'Objectifs' },
+  { href: '/settings',  icon: Settings,        label: 'Réglages' },
 ]
 
 export function BottomNav() {
@@ -33,7 +33,10 @@ export function BottomNav() {
                 isActive ? 'text-accent' : 'text-text-muted'
               )}
             >
-              <item.icon className={cn('w-5 h-5 transition-transform', isActive && 'scale-110')} />
+              <item.icon
+                className={cn('w-5 h-5 transition-transform', isActive && 'scale-110')}
+                strokeWidth={1.5}
+              />
               <span>{item.label}</span>
             </Link>
           )

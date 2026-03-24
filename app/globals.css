@@ -2,32 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Obsidian Diamond — Design System ─────────────────────────────────────── */
+
 :root {
-  --background: #09090B;
-  --foreground: #FAFAFA;
-  --color-bg:           #09090B;
-  --color-surface:      #18181B;
-  --color-surface-2:    #27272A;
-  --color-border:       #3F3F46;
-  --color-text-primary: #FAFAFA;
-  --color-text-secondary: #A1A1AA;
-  --color-text-muted:   #71717A;
+  /* Neutrals & Fond */
+  --color-bg:           #08090A;   /* Obsidian Deep */
+  --color-surface:      #141619;   /* Titanium Black */
+  --color-surface-2:    #1C2026;   /* Titanium Black +  */
+  --color-border:       #2C2F36;   /* Graphite */
+
+  /* Typographie */
+  --color-text-primary:   #F4F4F6; /* Pearl White */
+  --color-text-secondary: #8E939F; /* Steel Gray */
+  --color-text-muted:     #5A6070; /* Steel Gray dim */
+
+  /* Accent & Sémantiques */
+  --color-accent:       #BDEFFF;   /* Diamond Blue */
+  --color-accent-glow:  rgba(189, 239, 255, 0.08); /* halo subtil */
+  --color-positive:     #3D5A80;   /* Sapphire Blue — succès */
+  --color-negative:     #E55C5C;   /* Ruby Red — perte */
+
+  /* Legacy aliases */
+  --background: var(--color-bg);
+  --foreground: var(--color-text-primary);
 }
 
+/* Mode clair conservé mais avec palette Obsidian allégée */
 html.light {
-  --background: #F8F8FA;
-  --foreground: #09090B;
-  --color-bg:           #F8F8FA;
-  --color-surface:      #FFFFFF;
-  --color-surface-2:    #F1F1F3;
-  --color-border:       #E4E4E7;
-  --color-text-primary: #09090B;
-  --color-text-secondary: #52525B;
-  --color-text-muted:   #A1A1AA;
+  --color-bg:             #F0F2F5;
+  --color-surface:        #FFFFFF;
+  --color-surface-2:      #F4F6F9;
+  --color-border:         #DDE1EA;
+  --color-text-primary:   #0D0F14;
+  --color-text-secondary: #4A5060;
+  --color-text-muted:     #8E939F;
+  --background: var(--color-bg);
+  --foreground: var(--color-text-primary);
 }
 
-html.light ::-webkit-scrollbar-track { background: #F1F1F3; }
-html.light ::-webkit-scrollbar-thumb { background: #C9A84C; }
+/* ── Reset & Box Model ─────────────────────────────────────────────────────── */
 
 * {
   box-sizing: border-box;
@@ -40,40 +53,84 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
   height: 100%;
   overflow-x: hidden;
-  /* Safe area for iPhone notch & home indicator */
   padding-top: env(safe-area-inset-top);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ── Typography scale (Geologica) ──────────────────────────────────────────── */
+
+.display {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--color-text-primary);
 }
 
-::-webkit-scrollbar-track {
-  background: #18181B;
+.heading-1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #6B5A2A;
-  border-radius: 3px;
+.heading-2 {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #C9A84C;
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar       { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--color-bg); }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-accent); }
+
+html.light ::-webkit-scrollbar-track { background: var(--color-surface-2); }
+html.light ::-webkit-scrollbar-thumb { background: var(--color-border); }
+
+/* ── Recharts ──────────────────────────────────────────────────────────────── */
+
+.recharts-tooltip-wrapper { outline: none; }
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical   line {
+  stroke: var(--color-border) !important;
+  stroke-opacity: 0.6 !important;
 }
 
-.recharts-tooltip-wrapper {
-  outline: none;
+/* ── Utilities ─────────────────────────────────────────────────────────────── */
+
+/* Diamond Blue glow — boutons CTA */
+.glow-accent {
+  box-shadow: 0 0 16px rgba(189, 239, 255, 0.18), 0 0 4px rgba(189, 239, 255, 0.10);
+}
+.glow-accent:hover {
+  box-shadow: 0 0 24px rgba(189, 239, 255, 0.28), 0 0 6px rgba(189, 239, 255, 0.14);
 }
 
-/* Padding bas du contenu pour laisser la place à la bottom nav + safe area iPhone */
+/* Bordure active Diamond Blue */
+.border-active {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px rgba(189, 239, 255, 0.15);
+}
+
+/* Remplacer les emerald (positif) par Sapphire sur les composants Recharts inline */
+.recharts-line-curve { }
+
+/* ── Safe-area mobile ──────────────────────────────────────────────────────── */
+
 .pb-nav {
   padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
 }
+
+/* ── Print ─────────────────────────────────────────────────────────────────── */
 
 @media print {
   aside, nav, .print\:hidden { display: none !important; }

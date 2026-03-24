@@ -8,7 +8,7 @@ import {
   Wallet,
   Settings,
   LogOut,
-  TrendingUpIcon,
+  Gem,
   LineChart,
   Target,
   ArrowLeftRight,
@@ -28,22 +28,24 @@ const navItems = [
   { href: '/simulator',    icon: Calculator,      label: 'Simulateur'      },
   { href: '/budget',       icon: PiggyBank,       label: 'Budget'          },
   { href: '/goals',        icon: Target,          label: 'Objectifs'       },
-  { href: '/settings',     icon: Settings,        label: 'Param\u00e8tres' },
+  { href: '/settings',     icon: Settings,        label: 'Paramètres'      },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-surface border-r border-border hidden lg:flex flex-col z-50">
-      <div className="flex items-center gap-3 px-6 py-6 border-b border-border">
-        <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
-          <TrendingUpIcon className="w-4 h-4 text-white" />
+    <aside className="fixed left-0 top-0 h-full w-60 bg-surface border-r border-border hidden lg:flex flex-col z-50">
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
+        <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+          <Gem className="w-4 h-4 text-accent" strokeWidth={1.5} />
         </div>
-        <span className="font-bold text-text-primary">Wealth Tracker</span>
+        <span className="font-semibold text-text-primary tracking-tight">Financy</span>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map(item => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
           return (
@@ -51,27 +53,31 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
                 isActive
-                  ? 'bg-accent/10 text-accent'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-2'
+                  ? 'bg-accent/8 text-accent border border-accent/12'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-2 border border-transparent'
               )}
             >
-              <item.icon className="w-4 h-4 shrink-0" />
+              <item.icon
+                className={cn('w-4 h-4 shrink-0 transition-colors', isActive ? 'text-accent' : 'text-steel')}
+                strokeWidth={1.5}
+              />
               {item.label}
             </Link>
           )
         })}
       </nav>
 
-      <div className="px-3 py-4 border-t border-border space-y-1">
+      {/* Footer */}
+      <div className="px-3 py-4 border-t border-border space-y-0.5">
         <ThemeToggle />
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-sm font-medium text-text-secondary hover:text-red-400 hover:bg-red-500/10 transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm font-medium text-text-secondary hover:text-ruby hover:bg-ruby/8 border border-transparent transition-all duration-150"
         >
-          <LogOut className="w-4 h-4 shrink-0" />
-          D&eacute;connexion
+          <LogOut className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+          Déconnexion
         </button>
       </div>
     </aside>
