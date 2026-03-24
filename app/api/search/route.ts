@@ -52,18 +52,28 @@ const POPULAR_STOCKS: SearchResult[] = [
   { symbol: 'KER.PA', name: 'Kering',               exchange: 'Euronext Paris' },
   { symbol: 'SGO.PA', name: 'Saint-Gobain',         exchange: 'Euronext Paris' },
   { symbol: 'WLN.PA', name: 'Worldline',            exchange: 'Euronext Paris' },
-  // ETF
-  { symbol: 'IWDA.AS', name: 'iShares Core MSCI World ETF',            exchange: 'Euronext Amsterdam' },
-  { symbol: 'CW8.PA',  name: 'Amundi MSCI World ETF',                   exchange: 'Euronext Paris' },
-  { symbol: 'PANX.PA', name: 'Amundi NASDAQ-100 ETF',                   exchange: 'Euronext Paris' },
-  { symbol: 'ESE.PA',  name: 'BNP Paribas Easy S&P 500 UCITS ETF EUR', exchange: 'Euronext Paris' },
-  { symbol: 'RS2K.PA', name: 'Amundi Russell 2000 ETF',                 exchange: 'Euronext Paris' },
-  { symbol: 'PAEEM.PA',name: 'Amundi MSCI Emerging Markets ETF',        exchange: 'Euronext Paris' },
-  { symbol: 'CAC.PA',  name: 'Lyxor CAC 40 ETF',                        exchange: 'Euronext Paris' },
-  { symbol: 'SPY',     name: 'SPDR S&P 500 ETF',                        exchange: 'NYSE' },
-  { symbol: 'QQQ',     name: 'Invesco QQQ Trust (NASDAQ-100)',           exchange: 'NASDAQ' },
-  { symbol: 'VT',      name: 'Vanguard Total World Stock ETF',           exchange: 'NYSE' },
-  { symbol: 'VWO',     name: 'Vanguard FTSE Emerging Markets ETF',       exchange: 'NYSE' },
+  // ETF World / PEA éligibles
+  { symbol: 'IWPE.PA', name: 'iShares MSCI World Swap PEA UCITS ETF EUR (Acc)', exchange: 'Euronext Paris', isin: 'IE0002XZSHO1' },
+  { symbol: 'IWDA.AS', name: 'iShares Core MSCI World UCITS ETF',               exchange: 'Euronext Amsterdam', isin: 'IE00B4L5Y983' },
+  { symbol: 'CW8.PA',  name: 'Amundi MSCI World UCITS ETF (C)',                  exchange: 'Euronext Paris', isin: 'LU1681043599' },
+  { symbol: 'EWLD.PA', name: 'Lyxor MSCI World UCITS ETF (Acc)',                 exchange: 'Euronext Paris', isin: 'FR0011869353' },
+  { symbol: 'WPEA.PA', name: 'Amundi MSCI World SRI PAB UCITS ETF PEA (C)',      exchange: 'Euronext Paris', isin: 'LU1792117779' },
+  // ETF S&P 500 / US
+  { symbol: 'SPXS.PA', name: 'Amundi S&P 500 UCITS ETF (Acc)',                  exchange: 'Euronext Paris', isin: 'LU0996182563' },
+  { symbol: 'ESE.PA',  name: 'BNP Paribas Easy S&P 500 UCITS ETF EUR',          exchange: 'Euronext Paris', isin: 'FR0011550185' },
+  { symbol: 'SPY5.PA', name: 'iShares Core S&P 500 UCITS ETF USD (Acc)',         exchange: 'Euronext Paris', isin: 'IE00B5BMR087' },
+  // ETF Nasdaq / Tech
+  { symbol: 'PANX.PA', name: 'Amundi NASDAQ-100 UCITS ETF (Acc)',                exchange: 'Euronext Paris', isin: 'LU1829221024' },
+  { symbol: 'QDVE.DE', name: 'iShares S&P 500 Information Technology ETF',       exchange: 'Xetra', isin: 'IE00B3WJKG14' },
+  // ETF Emergents / Divers
+  { symbol: 'PAEEM.PA',name: 'Amundi MSCI Emerging Markets UCITS ETF',           exchange: 'Euronext Paris', isin: 'LU1681045370' },
+  { symbol: 'RS2K.PA', name: 'Amundi Russell 2000 UCITS ETF',                    exchange: 'Euronext Paris', isin: 'LU1681038672' },
+  { symbol: 'CAC.PA',  name: 'Lyxor CAC 40 UCITS ETF',                           exchange: 'Euronext Paris' },
+  // ETF US cotés USD
+  { symbol: 'SPY',     name: 'SPDR S&P 500 ETF Trust',                           exchange: 'NYSE' },
+  { symbol: 'QQQ',     name: 'Invesco QQQ Trust (NASDAQ-100)',                    exchange: 'NASDAQ' },
+  { symbol: 'VT',      name: 'Vanguard Total World Stock ETF',                    exchange: 'NYSE' },
+  { symbol: 'VWO',     name: 'Vanguard FTSE Emerging Markets ETF',                exchange: 'NYSE' },
 ]
 
 // ─── ISIN detection & resolution ───────────────────────────────────────────────
@@ -101,6 +111,11 @@ function toYahooSymbol(ticker: string, exchCode: string): string {
 }
 
 async function resolveISIN(isin: string): Promise<SearchResult[]> {
+  // 1. Check known list first (instant, no rate limit)
+  const local = POPULAR_STOCKS.filter(s => s.isin === isin)
+  if (local.length > 0) return local
+
+  // 2. Try OpenFIGI
   try {
     const res = await fetch('https://api.openfigi.com/v3/mapping', {
       method: 'POST',
@@ -119,6 +134,7 @@ async function resolveISIN(isin: string): Promise<SearchResult[]> {
       isin,
     }))
   } catch {
+    // 3. Last resort: Alpha Vantage or empty
     return searchStock(isin)
   }
 }
@@ -172,12 +188,13 @@ async function searchStock(q: string): Promise<SearchResult[]> {
       exchange: m['4. region'],
     }))
   } catch {
-    // Fallback: filter from popular list
+    // Fallback: filter from popular list (symbol, name, ISIN)
     const lower = q.toLowerCase()
     return POPULAR_STOCKS.filter(
       s =>
         s.symbol.toLowerCase().includes(lower) ||
         s.name.toLowerCase().includes(lower) ||
+        (s.isin ?? '').toLowerCase().includes(lower) ||
         (s.exchange ?? '').toLowerCase().includes(lower)
     ).slice(0, 8)
   }
