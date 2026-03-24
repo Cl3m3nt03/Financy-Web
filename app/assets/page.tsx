@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Building2, Wallet, TrendingUp, Bitcoin, PiggyBank, Package, Home } from 'lucide-react'
+import { Plus, Pencil, Trash2, Building2, Wallet, TrendingUp, Bitcoin, PiggyBank, Package, Home, FileUp } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AssetForm } from '@/components/assets/asset-form'
+import { HoldingsCsvImport } from '@/components/assets/holdings-csv-import'
 import { useAssets, useDeleteAsset } from '@/hooks/use-assets'
 import { MOCK_ASSETS } from '@/services/mock-data'
 import { Asset } from '@/types'
@@ -34,6 +35,7 @@ export default function AssetsPage() {
   const deleteAsset = useDeleteAsset()
   const [showForm, setShowForm] = useState(false)
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>()
+  const [importAsset, setImportAsset] = useState<Asset | undefined>()
 
   const displayAssets = assets ?? MOCK_ASSETS
 
@@ -109,6 +111,15 @@ export default function AssetsPage() {
                           )}
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+                          {['PEA', 'CTO', 'STOCK'].includes(asset.type) && (
+                            <button
+                              onClick={() => setImportAsset(asset)}
+                              title="Importer positions CSV"
+                              className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-text-secondary hover:text-accent transition-colors"
+                            >
+                              <FileUp className="w-3 h-3" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleEdit(asset)}
                             className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors"
@@ -214,6 +225,14 @@ export default function AssetsPage() {
       </div>
 
       {showForm && <AssetForm onClose={handleCloseForm} editAsset={editingAsset} />}
+
+      {importAsset && (
+        <HoldingsCsvImport
+          assetId={importAsset.id}
+          assetName={importAsset.name}
+          onClose={() => setImportAsset(undefined)}
+        />
+      )}
     </div>
   )
 }
