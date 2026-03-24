@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db'
 import { rateLimit } from '@/lib/rate-limit'
 import { generateOtpCode, sendOtpEmail } from '@/lib/email'
+import { verifyDeviceToken } from '@/lib/device-token'
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -17,10 +18,11 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email:    { label: 'Email',    type: 'email' },
-        password: { label: 'Password', type: 'password' },
-        totpCode: { label: 'OTP',      type: 'text' },
-        ip:       { label: 'IP',       type: 'text' },
+        email:       { label: 'Email',        type: 'email' },
+        password:    { label: 'Password',     type: 'password' },
+        totpCode:    { label: 'OTP',          type: 'text' },
+        ip:          { label: 'IP',           type: 'text' },
+        deviceToken: { label: 'Device Token', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
@@ -49,7 +51,11 @@ export const authOptions: NextAuthOptions = {
 
         // ── 2FA par email ──────────────────────────────────────────────────
         if (user.twoFactorEnabled) {
-          if (!credentials.totpCode) {
+          // Appareil de confiance (30j) — skip 2FA
+          const dt = credentials.deviceToken
+          if (dt && verifyDeviceToken(user.id, dt)) {
+            // trusted device, pas de 2FA nécessaire
+          } else if (!credentials.totpCode) {
             // Générer et envoyer un nouveau code
             const code = generateOtpCode()
             const expiry = new Date(Date.now() + 10 * 60 * 1000)
@@ -59,23 +65,22 @@ export const authOptions: NextAuthOptions = {
             })
             await sendOtpEmail(user.email, code)
             throw new Error('OTP_REQUIRED')
+          } else {
+            if (!user.emailOtpCode || !user.emailOtpExpiry) {
+              throw new Error('OTP_REQUIRED')
+            }
+            if (new Date() > user.emailOtpExpiry) {
+              throw new Error('OTP_EXPIRED')
+            }
+            if (credentials.totpCode !== user.emailOtpCode) {
+              throw new Error('INVALID_OTP')
+            }
+            // Code valide — on l'efface
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { emailOtpCode: null, emailOtpExpiry: null },
+            })
           }
-
-          if (!user.emailOtpCode || !user.emailOtpExpiry) {
-            throw new Error('OTP_REQUIRED')
-          }
-          if (new Date() > user.emailOtpExpiry) {
-            throw new Error('OTP_EXPIRED')
-          }
-          if (credentials.totpCode !== user.emailOtpCode) {
-            throw new Error('INVALID_OTP')
-          }
-
-          // Code valide — on l'efface
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { emailOtpCode: null, emailOtpExpiry: null },
-          })
         }
 
         await prisma.loginAttempt.create({

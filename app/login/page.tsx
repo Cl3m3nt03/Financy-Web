@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -8,15 +8,32 @@ import { TrendingUp, Eye, EyeOff, AlertCircle, Shield } from 'lucide-react'
 
 type Step = 'credentials' | 'totp'
 
+function getCookie(name: string): string {
+  if (typeof document === 'undefined') return ''
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
+  return match ? decodeURIComponent(match[1]) : ''
+}
+
+function setCookie(name: string, value: string, days: number) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString()
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Strict`
+}
+
 export default function LoginPage() {
   const router = useRouter()
-  const [step, setStep]         = useState<Step>('credentials')
-  const [email, setEmail]       = useState('demo@wealthtracker.app')
-  const [password, setPassword] = useState('password123')
-  const [totpCode, setTotpCode] = useState('')
-  const [showPwd, setShowPwd]   = useState(false)
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [step, setStep]               = useState<Step>('credentials')
+  const [email, setEmail]             = useState('demo@wealthtracker.app')
+  const [password, setPassword]       = useState('password123')
+  const [totpCode, setTotpCode]       = useState('')
+  const [showPwd, setShowPwd]         = useState(false)
+  const [error, setError]             = useState('')
+  const [loading, setLoading]         = useState(false)
+  const [rememberDevice, setRemember] = useState(true)
+  const [deviceToken, setDeviceToken] = useState('')
+
+  useEffect(() => {
+    setDeviceToken(getCookie('financy_trusted'))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -27,12 +44,21 @@ export default function LoginPage() {
       email,
       password,
       totpCode: step === 'totp' ? totpCode : '',
+      deviceToken,
       redirect: false,
     })
 
     setLoading(false)
 
     if (!result?.error) {
+      // Si on vient de valider le 2FA et que l'utilisateur veut se souvenir de l'appareil
+      if (step === 'totp' && rememberDevice) {
+        try {
+          const res = await fetch('/api/auth/device-token', { method: 'POST' })
+          const data = await res.json()
+          if (data.token) setCookie('financy_trusted', data.token, 30)
+        } catch {}
+      }
       router.push('/dashboard')
       return
     }
@@ -180,6 +206,19 @@ export default function LoginPage() {
                     required
                   />
                 </div>
+
+                {/* Se souvenir de cet appareil */}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={rememberDevice}
+                    onChange={e => setRemember(e.target.checked)}
+                    className="w-4 h-4 rounded accent-accent"
+                  />
+                  <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
+                    Se souvenir de cet appareil pendant 30 jours
+                  </span>
+                </label>
 
                 {error && (
                   <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
