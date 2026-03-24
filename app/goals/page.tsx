@@ -73,7 +73,7 @@ export default function GoalsPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Objectifs" subtitle="Jalons patrimoniaux et projections" />
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-text-muted text-sm">Patrimoine actuel</p>

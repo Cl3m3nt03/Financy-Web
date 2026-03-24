@@ -66,7 +66,7 @@ export default function AssetsPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Mes actifs" subtitle={`${displayAssets.length} actifs · ${formatCurrency(total)}`} />
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Total + Add button */}
         <div className="flex items-center justify-between">
           <div>
@@ -110,7 +110,7 @@ export default function AssetsPage() {
                             <p className="text-text-muted text-xs mt-0.5">{asset.institution}</p>
                           )}
                         </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+                        <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ml-2 shrink-0">
                           {['PEA', 'CTO', 'STOCK'].includes(asset.type) && (
                             <button
                               onClick={() => setImportAsset(asset)}

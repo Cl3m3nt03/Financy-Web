@@ -77,7 +77,7 @@ export default function SimulatorPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Simulateur" subtitle="Projection avec la formule Vf = Vi × (1 + ρ/n)^(n×t)" />
 
-      <div className="flex-1 p-6 space-y-6 max-w-8xl">
+      <div className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-8xl">
 
         {/* Formule */}
         <Card className="border-accent/20 bg-accent/5">
@@ -101,8 +101,9 @@ export default function SimulatorPage() {
         </Card>
 
         {/* Presets */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-text-muted text-xs">Pr&eacute;d&eacute;finis :</span>
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+        <div className="flex items-center gap-2 w-max sm:w-auto sm:flex-wrap">
+          <span className="text-text-muted text-xs shrink-0">Prédéfinis :</span>
           {PRESETS.map(p => (
             <button key={p.label}
               onClick={() => { setRho(p.rate); setN(p.n) }}
@@ -115,6 +116,7 @@ export default function SimulatorPage() {
               {p.label} &mdash; {p.rate}%
             </button>
           ))}
+        </div>
         </div>
 
         {/* Controls */}
@@ -163,7 +165,7 @@ export default function SimulatorPage() {
         </Card>
 
         {/* Results */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <Card className="border-accent/30 bg-accent/5">
             <CardContent className="pt-5">
               <p className="text-text-muted text-xs mb-1">Vf — Valeur finale</p>

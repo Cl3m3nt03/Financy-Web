@@ -326,7 +326,7 @@ export default function BudgetPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Budget" subtitle="Regle des 50/30/20 et flux mensuel" alertCount={alertCount} />
 
-      <div className="flex-1 p-6 space-y-6 max-w-7xl w-full">
+      <div className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full">
 
         {/* Income */}
         <Card>

@@ -132,7 +132,7 @@ export default function TransactionsPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Transactions" subtitle="Historique de toutes vos opérations" />
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6">
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -152,20 +152,42 @@ export default function TransactionsPage() {
         </div>
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* Filters */}
-          <div className="flex items-center gap-1.5 bg-surface border border-border rounded-xl p-1">
-            <Filter className="w-3.5 h-3.5 text-text-muted ml-2" />
-            {ALL_TYPES.map(t => (
-              <button key={t} onClick={() => setFilter(t)}
-                className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                  filter === t ? 'bg-accent text-background' : 'text-text-muted hover:text-text-primary'
-                )}>
-                {t === 'ALL' ? 'Tout' : TYPE_CONFIG[t]?.label}
+        <div className="space-y-3">
+          {/* Row 1 : filters + actions */}
+          <div className="flex items-center gap-2 flex-wrap justify-between">
+            {/* Filters — scrollable on mobile */}
+            <div className="overflow-x-auto max-w-full">
+              <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-1 w-max">
+                <Filter className="w-3.5 h-3.5 text-text-muted ml-1.5 shrink-0" />
+                {ALL_TYPES.map(t => (
+                  <button key={t} onClick={() => setFilter(t)}
+                    className={cn('px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
+                      filter === t ? 'bg-accent text-obsidian' : 'text-text-muted hover:text-text-primary'
+                    )}>
+                    {t === 'ALL' ? 'Tout' : TYPE_CONFIG[t]?.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => setShowImport(true)}
+                className="flex items-center gap-1.5 border border-border hover:border-accent/50 text-text-secondary hover:text-accent px-3 py-2 rounded-xl text-xs font-medium transition-colors">
+                <Upload className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Import CSV</span>
+                <span className="sm:hidden">CSV</span>
               </button>
-            ))}
+              <button onClick={() => setShowForm(true)}
+                className="flex items-center gap-1.5 bg-accent hover:bg-accent-dark text-obsidian px-3 py-2 rounded-xl text-xs font-semibold transition-colors">
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Nouvelle transaction</span>
+                <span className="sm:hidden">Ajouter</span>
+              </button>
+            </div>
           </div>
 
+          {/* Row 2 : tag filters */}
           {allTags.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
               <Tag className="w-3 h-3 text-text-muted shrink-0" />
@@ -183,16 +205,6 @@ export default function TransactionsPage() {
               ))}
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowImport(true)}
-              className="flex items-center gap-2 border border-border hover:border-accent/50 text-text-secondary hover:text-accent px-4 py-2 rounded-xl text-sm font-medium transition-colors">
-              <Upload className="w-4 h-4" /> Import CSV
-            </button>
-            <button onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-accent hover:bg-accent-dark text-background px-4 py-2 rounded-xl text-sm font-semibold transition-colors">
-              <Plus className="w-4 h-4" /> Nouvelle transaction
-            </button>
-          </div>
         </div>
 
         {/* Table */}

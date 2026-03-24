@@ -72,34 +72,37 @@ export default function FiscalPage() {
     <div className="flex flex-col min-h-screen">
       <Header title="Rapport fiscal" subtitle="Plus-values, dividendes et estimations d'impot" />
 
-      <div className="flex-1 p-6 space-y-6 max-w-8xl">
+      <div className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-8xl">
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-text-secondary text-sm">Ann&#233;e fiscale</span>
-            <div className="flex gap-1.5">
-              {years.map(y => (
-                <button
-                  key={y}
-                  onClick={() => setYear(y)}
-                  className={cn(
-                    'px-3.5 py-1.5 rounded-xl text-sm font-medium transition-colors border',
-                    year === y
-                      ? 'bg-accent/10 border-accent text-accent'
-                      : 'border-border text-text-muted hover:text-text-primary hover:border-accent/40'
-                  )}
-                >
-                  {y}
-                </button>
-              ))}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-text-secondary text-sm shrink-0">Année</span>
+            <div className="overflow-x-auto">
+              <div className="flex gap-1.5 w-max">
+                {years.map(y => (
+                  <button
+                    key={y}
+                    onClick={() => setYear(y)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-xl text-sm font-medium transition-colors border whitespace-nowrap',
+                      year === y
+                        ? 'bg-accent/10 border-accent text-accent'
+                        : 'border-border text-text-muted hover:text-text-primary hover:border-accent/40'
+                    )}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 border border-border hover:border-accent/50 text-text-secondary hover:text-accent px-4 py-2 rounded-xl text-sm font-medium transition-colors print:hidden"
+            className="flex items-center gap-2 border border-border hover:border-accent/50 text-text-secondary hover:text-accent px-3 py-2 rounded-xl text-sm font-medium transition-colors print:hidden shrink-0"
           >
             <Download className="w-4 h-4" />
-            Exporter PDF
+            <span className="hidden sm:inline">Exporter PDF</span>
+            <span className="sm:hidden">PDF</span>
           </button>
         </div>
 
