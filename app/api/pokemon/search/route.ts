@@ -9,21 +9,32 @@ async function searchCards(query: string) {
   const headers: Record<string, string> = {}
   if (apiKey) headers['X-Api-Key'] = apiKey
 
-  const url = `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(query)}"&orderBy=-set.releaseDate&pageSize=20&select=id,name,number,rarity,set,images,cardmarket`
+  const url = `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(query)}"&orderBy=-set.releaseDate&pageSize=20&select=id,name,number,rarity,set,images,cardmarket,tcgplayer`
   const res = await fetch(url, { headers, next: { revalidate: 3600 } })
   if (!res.ok) return []
 
   const json = await res.json()
-  return (json.data ?? []).map((card: any) => ({
-    id: card.id,
-    name: card.name,
-    setName: card.set?.name ?? '',
-    number: card.number ?? '',
-    rarity: card.rarity ?? '',
-    imageUrl: card.images?.small ?? '',
-    trendPrice: card.cardmarket?.prices?.trendPrice ?? null,
-    type: 'card' as const,
-  }))
+  return (json.data ?? []).map((card: any) => {
+    const cm = card.cardmarket?.prices
+    const tcp = card.tcgplayer?.prices
+    // Best real sold price available (CardMarket EUR preferred, TCGPlayer USD fallback)
+    const trendPrice =
+      cm?.trendPrice ??
+      cm?.averageSellPrice ??
+      (tcp?.holofoil?.market ?? tcp?.reverseHolofoil?.market ?? tcp?.normal?.market
+        ? Math.round((tcp?.holofoil?.market ?? tcp?.reverseHolofoil?.market ?? tcp?.normal?.market) * 0.92 * 100) / 100
+        : null)
+    return {
+      id: card.id,
+      name: card.name,
+      setName: card.set?.name ?? '',
+      number: card.number ?? '',
+      rarity: card.rarity ?? '',
+      imageUrl: card.images?.small ?? '',
+      trendPrice,
+      type: 'card' as const,
+    }
+  })
 }
 
 // ─── Sealed — pokemontcg.io sets (primary, free, no key needed) ───────────────

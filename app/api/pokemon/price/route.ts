@@ -3,18 +3,39 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 
-// ─── Cards — pokemontcg.io trendPrice (CardMarket avg completed sales) ────────
+// ─── Cards — pokemontcg.io (CardMarket trendPrice → averageSellPrice → TCGPlayer market) ─
+// Règle Zalu: all sources are real completed-sale prices, not listings
 async function fetchCardPrice(cardApiId: string): Promise<number | null> {
   const apiKey = process.env.POKEMON_TCG_API_KEY
   const headers: Record<string, string> = {}
   if (apiKey) headers['X-Api-Key'] = apiKey
 
-  const url = `https://api.pokemontcg.io/v2/cards/${encodeURIComponent(cardApiId)}?select=cardmarket`
+  // Fetch both cardmarket AND tcgplayer data
+  const url = `https://api.pokemontcg.io/v2/cards/${encodeURIComponent(cardApiId)}?select=cardmarket,tcgplayer`
   const res = await fetch(url, { headers, cache: 'no-store' })
   if (!res.ok) return null
 
   const json = await res.json()
-  return json.data?.cardmarket?.prices?.trendPrice ?? null
+  const cm = json.data?.cardmarket?.prices
+  const tcp = json.data?.tcgplayer?.prices
+
+  // 1. CardMarket trendPrice (EUR, avg of recent completed CardMarket sales) ✓
+  if (cm?.trendPrice) return cm.trendPrice
+
+  // 2. CardMarket averageSellPrice (EUR, direct avg of completed sales) ✓
+  if (cm?.averageSellPrice) return cm.averageSellPrice
+
+  // 3. TCGPlayer market price (USD→EUR, avg of completed TCGPlayer sales) ✓
+  // Try holofoil, then reverseHolofoil, then normal — convert USD→EUR (rate ~0.92)
+  const tcgPrice =
+    tcp?.holofoil?.market ??
+    tcp?.reverseHolofoil?.market ??
+    tcp?.normal?.market ??
+    tcp?.['1stEditionHolofoil']?.market ??
+    null
+  if (tcgPrice) return Math.round(tcgPrice * 0.92 * 100) / 100
+
+  return null
 }
 
 // ─── Sealed — PriceCharting new-price (avg completed eBay/Amazon sales) ──────
