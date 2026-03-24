@@ -2,6 +2,7 @@
 
 import { Sidebar } from './sidebar'
 import { BottomNav } from './bottom-nav'
+import { GlobalSearch } from '@/components/search/global-search'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <BottomNav />
+      <GlobalSearch />
     </div>
   )
 }

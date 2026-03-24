@@ -12,6 +12,7 @@ import { Onboarding } from '@/components/dashboard/onboarding'
 import { SankeyChart } from '@/components/dashboard/sankey-chart'
 import { WealthProjection } from '@/components/dashboard/wealth-projection'
 import { PassiveIncome } from '@/components/dashboard/passive-income'
+import { Milestones } from '@/components/dashboard/milestones'
 import { useTransactions } from '@/hooks/use-transactions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePortfolioStats } from '@/hooks/use-portfolio'
@@ -145,6 +146,18 @@ export default function DashboardPage() {
             <PassiveIncome transactions={transactions ?? []} assets={displayAssets} />
           </div>
         </div>
+
+        {/* Milestones patrimoniaux */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <span>Paliers patrimoniaux</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <Milestones totalWealth={displayStats.totalValue} />
+          </CardContent>
+        </Card>
 
         {/* Projection patrimoniale */}
         <WealthProjection currentValue={displayStats.totalValue} />

@@ -5,7 +5,29 @@
 :root {
   --background: #09090B;
   --foreground: #FAFAFA;
+  --color-bg:           #09090B;
+  --color-surface:      #18181B;
+  --color-surface-2:    #27272A;
+  --color-border:       #3F3F46;
+  --color-text-primary: #FAFAFA;
+  --color-text-secondary: #A1A1AA;
+  --color-text-muted:   #71717A;
 }
+
+html.light {
+  --background: #F8F8FA;
+  --foreground: #09090B;
+  --color-bg:           #F8F8FA;
+  --color-surface:      #FFFFFF;
+  --color-surface-2:    #F1F1F3;
+  --color-border:       #E4E4E7;
+  --color-text-primary: #09090B;
+  --color-text-secondary: #52525B;
+  --color-text-muted:   #A1A1AA;
+}
+
+html.light ::-webkit-scrollbar-track { background: #F1F1F3; }
+html.light ::-webkit-scrollbar-thumb { background: #C9A84C; }
 
 * {
   box-sizing: border-box;
