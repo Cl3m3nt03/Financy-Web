@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   LayoutDashboard, Wallet, LineChart, Target, MoreHorizontal,
-  ArrowLeftRight, PiggyBank, Receipt, Calculator, Settings, LogOut, X,
+  ArrowLeftRight, PiggyBank, Receipt, Calculator, Settings, LogOut, X, Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -21,6 +21,7 @@ const MAIN_NAV = [
 const MORE_NAV = [
   { href: '/transactions', icon: ArrowLeftRight, label: 'Transactions'  },
   { href: '/budget',       icon: PiggyBank,      label: 'Budget'        },
+  { href: '/pokemon',      icon: Sparkles,       label: 'Pokémon TCG'   },
   { href: '/fiscal',       icon: Receipt,        label: 'Rapport fiscal' },
   { href: '/simulator',    icon: Calculator,     label: 'Simulateur'    },
   { href: '/settings',     icon: Settings,       label: 'Paramètres'    },

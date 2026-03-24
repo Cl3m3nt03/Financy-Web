@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -28,6 +29,7 @@ model User {
   budgetIncome       BudgetIncome?
   loginAttempts      LoginAttempt[]
   bankConnections    BankConnection[]
+  pokemonItems       PokemonItem[]
 }
 
 model LoginAttempt {
@@ -184,4 +186,44 @@ model Goal {
   updatedAt   DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PokemonItem {
+  id              String    @id @default(cuid())
+  userId          String
+
+  itemType        String    // "card" | "sealed"
+  name            String
+  setName         String?
+  language        String    @default("FR")
+  imageUrl        String?
+
+  // Card fields
+  cardApiId       String?
+  cardNumber      String?
+  rarity          String?
+  condition       String?   @default("NM")
+  isReverse       Boolean   @default(false)
+  isGraded        Boolean   @default(false)
+  gradeLabel      String?
+
+  // Sealed fields
+  sealedType      String?
+  pricechartingId String?
+
+  // Portfolio
+  quantity        Int       @default(1)
+  purchasePrice   Float
+  currentPrice    Float?
+  lastPriceAt     DateTime?
+  currency        String    @default("EUR")
+  purchasedAt     DateTime?
+  notes           String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

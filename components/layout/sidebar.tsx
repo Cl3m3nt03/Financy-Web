@@ -8,13 +8,13 @@ import {
   Wallet,
   Settings,
   LogOut,
-  Gem,
   LineChart,
   Target,
   ArrowLeftRight,
   Receipt,
   Calculator,
   PiggyBank,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -28,6 +28,7 @@ const navItems = [
   { href: '/simulator',    icon: Calculator,      label: 'Simulateur'      },
   { href: '/budget',       icon: PiggyBank,       label: 'Budget'          },
   { href: '/goals',        icon: Target,          label: 'Objectifs'       },
+  { href: '/pokemon',      icon: Sparkles,        label: 'Pokémon TCG'     },
   { href: '/settings',     icon: Settings,        label: 'Paramètres'      },
 ]
 
