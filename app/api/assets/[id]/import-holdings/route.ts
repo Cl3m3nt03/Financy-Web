@@ -89,7 +89,7 @@ function detectAndParse(csv: string): RawRow[] {
   const colName   = findCol('libelle', 'designation', 'instrument', 'nom du titre', 'titre', 'name')
   const colIsin   = findCol('isin')
   const colQty    = findCol('quantite', 'qte', 'nb titres', 'quantity', 'shares', 'nombre de titres')
-  const colPru    = findCol('pru', 'prix de revient', 'cout moyen', 'coût moyen', 'average cost', 'avg price', 'pa')
+  const colPru    = findCol('buyingprice', 'buying price', 'pru', 'prix de revient', 'cout moyen', 'coût moyen', 'average cost', 'avg price', 'pa')
   const colSymbol = findCol('ticker', 'symbole', 'symbol')
 
   const rows: RawRow[] = []

@@ -35,7 +35,7 @@ function quickParseCsv(csv: string): CsvRow[] {
   const colName = findCol('libelle', 'designation', 'instrument', 'nom du titre', 'titre', 'name')
   const colIsin = findCol('isin')
   const colQty  = findCol('quantite', 'qte', 'nb titres', 'quantity', 'shares', 'nombre de titres')
-  const colPru  = findCol('pru', 'prix de revient', 'cout moyen', 'average cost', 'avg price', 'pa')
+  const colPru  = findCol('buyingprice', 'buying price', 'pru', 'prix de revient', 'cout moyen', 'average cost', 'avg price', 'pa')
   const rows: CsvRow[] = []
   for (let i = 1; i < lines.length; i++) {
     const parts = lines[i].split(sep).map(p => p.replace(/^["'\s]+|["'\s]+$/g, '').trim())
