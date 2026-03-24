@@ -50,7 +50,7 @@ export function Sparkline({ symbol, range = '1mo', color = '#10B981', height = 4
             if (!active || !payload?.length) return null
             return (
               <div className="bg-surface border border-border rounded-lg px-2 py-1 text-xs font-mono text-text-primary shadow-lg">
-                {payload[0].value?.toFixed(2)}
+                {(payload[0].value as number)?.toFixed(2)}
               </div>
             )
           }}
