@@ -57,11 +57,11 @@ export function AlertsChecker() {
           (alert.condition === 'below' && price <= alert.target)
 
         if (triggered) {
-          // Mark as triggered server-side
+          // Mark as triggered server-side (+ envoie email)
           await fetch(`/api/alerts/${alert.id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ triggered: true }),
+            body: JSON.stringify({ triggered: true, price }),
           })
           checked.current.add(alert.id)
 

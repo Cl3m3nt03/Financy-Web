@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency, cn } from '@/lib/utils'
-import { Receipt, TrendingUp, ChevronDown, ChevronUp, Info, Download } from 'lucide-react'
+import { Receipt, TrendingUp, ChevronDown, ChevronUp, Info, Download, FileText, Copy, Check } from 'lucide-react'
 
 interface FiscalLine {
   date: string
@@ -52,6 +52,13 @@ export default function FiscalPage() {
   const currentYear = new Date().getFullYear()
   const [year, setYear] = useState(currentYear)
   const [showLines, setShowLines] = useState(false)
+  const [copiedCase, setCopiedCase] = useState<string | null>(null)
+
+  const copyValue = useCallback((caseId: string, value: number) => {
+    navigator.clipboard.writeText(value.toFixed(2).replace('.', ','))
+    setCopiedCase(caseId)
+    setTimeout(() => setCopiedCase(null), 2000)
+  }, [])
 
   const { data, isLoading } = useQuery<FiscalData>({
     queryKey: ['fiscal', year],
@@ -160,6 +167,97 @@ export default function FiscalPage() {
                     Estimation indicative bas&eacute;e sur le PFU 30%.
                     Consultez un conseiller fiscal pour votre d&eacute;claration officielle.
                   </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 2042-C Helper */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="w-4 h-4 text-accent" />
+                  Guide déclaration 2042-C — cases à remplir
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-text-muted text-xs">
+                  Copiez les montants directement dans votre déclaration en ligne (impots.gouv.fr).
+                </p>
+                <div className="space-y-2">
+                  {[
+                    {
+                      id: '3VG',
+                      label: 'Case 3VG — Plus-values et gains imposables (CTO)',
+                      value: Math.max(0, data.plusValues.cto),
+                      desc: 'Plus-values nettes réalisées sur votre CTO',
+                      highlight: data.plusValues.cto > 0,
+                    },
+                    {
+                      id: '3VH',
+                      label: 'Case 3VH — Moins-values',
+                      value: Math.abs(Math.min(0, data.plusValues.cto)),
+                      desc: 'Moins-values nettes (si votre CTO est en perte)',
+                      highlight: data.plusValues.cto < 0,
+                    },
+                    {
+                      id: '2DC',
+                      label: 'Case 2DC — Dividendes bruts',
+                      value: data.dividends.total,
+                      desc: 'Dividendes perçus hors PEA',
+                      highlight: data.dividends.total > 0,
+                    },
+                    {
+                      id: '2CG',
+                      label: 'Case 2CG — CSG déductible',
+                      value: data.dividends.total * 0.068,
+                      desc: '6,8% des dividendes (si option barème progressif)',
+                      highlight: false,
+                    },
+                  ].map(row => (
+                    <div
+                      key={row.id}
+                      className={cn(
+                        'flex items-center justify-between px-4 py-3 rounded-xl border transition-colors',
+                        row.highlight && row.value > 0
+                          ? 'bg-accent/5 border-accent/20'
+                          : 'bg-surface-2 border-border'
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-text-primary text-sm font-medium">{row.label}</p>
+                        <p className="text-text-muted text-xs mt-0.5">{row.desc}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 ml-4">
+                        <span className={cn(
+                          'font-mono font-bold text-sm',
+                          row.value > 0 ? 'text-accent' : 'text-text-muted'
+                        )}>
+                          {row.value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                        </span>
+                        <button
+                          onClick={() => copyValue(row.id, row.value)}
+                          className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors px-2 py-1 rounded-lg hover:bg-surface border border-border"
+                        >
+                          {copiedCase === row.id
+                            ? <><Check className="w-3 h-3 text-emerald-400" /><span className="text-emerald-400">Copié</span></>
+                            : <><Copy className="w-3 h-3" /><span>Copier</span></>
+                          }
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3 space-y-1.5">
+                  <p className="text-blue-400 text-xs font-semibold">PEA — rien à déclarer</p>
+                  <p className="text-text-muted text-xs">
+                    Les plus-values et dividendes du PEA sont exonérés d&apos;IR après 5 ans.
+                    Seuls les prélèvements sociaux (17,2%) s&apos;appliquent lors des retraits.
+                    {data.plusValues.pea > 0 && ` Vos plus-values PEA de ${formatCurrency(data.plusValues.pea)} restent hors déclaration.`}
+                  </p>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-text-muted bg-surface-2 rounded-xl px-4 py-3">
+                  <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-accent" />
+                  <span>Estimation indicative. Votre établissement financier vous enverra un IFU (Imprimé Fiscal Unique) en février avec les montants officiels.</span>
                 </div>
               </CardContent>
             </Card>

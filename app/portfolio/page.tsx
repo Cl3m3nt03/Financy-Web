@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { HoldingsTable } from '@/components/dashboard/holdings-table'
 import { RebalanceTool } from '@/components/portfolio/rebalance-tool'
 import { SectorBreakdown } from '@/components/portfolio/sector-breakdown'
+import { RiskAnalysis } from '@/components/portfolio/risk-analysis'
 import { PerformanceChart } from '@/components/portfolio/performance-chart'
 import { useAssets } from '@/hooks/use-assets'
 import { useTransactions } from '@/hooks/use-transactions'
@@ -12,7 +13,7 @@ import { usePricesStream, LiveStatus } from '@/hooks/use-prices-stream'
 import { MOCK_ASSETS } from '@/services/mock-data'
 import { Holding } from '@/types'
 import { formatCurrency, cn } from '@/lib/utils'
-import { TrendingUp, TrendingDown, RefreshCw, LineChart, Gift, Globe, LayoutGrid, Table2, Wifi, WifiOff, Loader2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, RefreshCw, LineChart, Gift, Globe, LayoutGrid, Table2, Wifi, WifiOff, Loader2, ShieldAlert } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
@@ -157,6 +158,7 @@ const TABS = [
   { id: 'positions',   label: 'Positions',       icon: LineChart   },
   { id: 'performance', label: 'Performance',      icon: TrendingUp  },
   { id: 'sectors',     label: 'Secteurs',         icon: LayoutGrid  },
+  { id: 'risk',        label: 'Risque',            icon: ShieldAlert },
   { id: 'dividends',   label: 'Dividendes',       icon: Gift        },
   { id: 'currencies',  label: 'Devises',          icon: Globe       },
   { id: 'rebalance',   label: 'Rééquilibrage',    icon: RefreshCw   },
@@ -517,6 +519,14 @@ export default function PortfolioPage() {
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2 text-base"><LayoutGrid className="w-4 h-4 text-accent" /> Répartition sectorielle</CardTitle></CardHeader>
             <CardContent><SectorBreakdown holdings={enrichedHoldings} /></CardContent>
+          </Card>
+        )}
+
+        {/* Tab: Risk */}
+        {tab === 'risk' && (
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><ShieldAlert className="w-4 h-4 text-accent" /> Analyse de risque</CardTitle></CardHeader>
+            <CardContent><RiskAnalysis holdings={enrichedHoldings.map(h => ({ ...h, assetType: financialAssets.find(a => a.holdings?.some(hh => hh.id === h.id))?.type }))} /></CardContent>
           </Card>
         )}
 
