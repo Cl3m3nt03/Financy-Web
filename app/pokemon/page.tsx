@@ -118,7 +118,7 @@ function SearchDropdown({
           value={query}
           onChange={e => { setQuery(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
-          placeholder={type === 'card' ? 'Rechercher une carte...' : 'Rechercher un produit scellé...'}
+          placeholder={type === 'card' ? 'Ex: Charizard, Pikachu...' : 'Ex: Surging Sparks, Prismatic Evolutions...'}
           className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted outline-none"
         />
         {query && (
@@ -264,9 +264,14 @@ function AddModal({
           {/* Search */}
           <div>
             <label className="block text-xs font-medium text-text-secondary mb-1.5">
-              {itemType === 'card' ? 'Chercher la carte' : 'Chercher le produit'}
+              {itemType === 'card' ? 'Chercher la carte' : 'Chercher le produit (nom anglais)'}
             </label>
             <SearchDropdown type={itemType} onSelect={handleSelect} />
+            {itemType === 'sealed' && (
+              <p className="text-[11px] text-text-muted mt-1.5">
+                Recherche par nom anglais — ex: &quot;Surging Sparks&quot;, &quot;Prismatic Evolutions&quot;...
+              </p>
+            )}
           </div>
 
           {/* Selected preview */}
