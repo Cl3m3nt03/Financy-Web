@@ -130,7 +130,7 @@ export function FinanceAssistant() {
               <Sparkles className="w-4 h-4 text-accent" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-text-primary">Financy AI</p>
+              <p className="text-sm font-semibold text-text-primary">Finexa AI</p>
               <p className="text-xs text-text-muted">Assistant financier</p>
             </div>
           </div>

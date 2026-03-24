@@ -7,7 +7,7 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {
-    const saved = localStorage.getItem('financy-theme') as 'dark' | 'light' | null
+    const saved = localStorage.getItem('finexa-theme') as 'dark' | 'light' | null
     if (saved) {
       setTheme(saved)
       document.documentElement.classList.toggle('light', saved === 'light')
@@ -17,7 +17,7 @@ export function ThemeToggle() {
   function toggle() {
     const next = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
-    localStorage.setItem('financy-theme', next)
+    localStorage.setItem('finexa-theme', next)
     document.documentElement.classList.toggle('light', next === 'light')
   }
 

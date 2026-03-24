@@ -54,7 +54,7 @@ export default function ReportPage() {
             <p className="text-zinc-500 text-sm mt-1">{today.charAt(0).toUpperCase() + today.slice(1)}</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-zinc-400 uppercase tracking-wider mb-1">Financy</p>
+            <p className="text-xs text-zinc-400 uppercase tracking-wider mb-1">Finexa</p>
             <p className="text-xs text-zinc-400">Tableau de bord financier personnel</p>
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function ReportPage() {
 
         {/* Footer */}
         <div className="mt-10 pt-6 border-t border-zinc-200 flex items-center justify-between text-xs text-zinc-400">
-          <span>Généré par Financy</span>
+          <span>Généré par Finexa</span>
           <span>{new Date().toLocaleDateString('fr-FR')}</span>
         </div>
       </div>

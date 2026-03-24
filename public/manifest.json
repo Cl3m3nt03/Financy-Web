@@ -1,6 +1,6 @@
 {
-  "name": "Financy",
-  "short_name": "Financy",
+  "name": "Finexa",
+  "short_name": "Finexa",
   "description": "Gérez votre patrimoine personnel",
   "start_url": "/dashboard",
   "scope": "/",

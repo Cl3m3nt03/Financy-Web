@@ -1,5 +1,5 @@
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Financy <onboarding@resend.dev>'
+const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Finexa <onboarding@resend.dev>'
 
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
   if (!RESEND_API_KEY) {
@@ -44,7 +44,7 @@ export async function sendAlertEmail(
               <td style="width:36px;height:36px;background:#C9A84C;border-radius:10px;text-align:center;vertical-align:middle;">
                 <span style="color:#09090B;font-weight:800;font-size:18px;">F</span>
               </td>
-              <td style="padding-left:12px;"><span style="color:#FAFAFA;font-weight:700;font-size:18px;">Financy</span></td>
+              <td style="padding-left:12px;"><span style="color:#FAFAFA;font-weight:700;font-size:18px;">Finexa</span></td>
             </tr></table>
           </td>
         </tr>
@@ -60,17 +60,17 @@ export async function sendAlertEmail(
           <p style="color:#A1A1AA;font-size:14px;margin:0 0 8px;">
             Cours actuel : <strong style="color:#FAFAFA;font-family:monospace;">${opts.price.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ${opts.currency}</strong>
           </p>
-          <p style="color:#71717A;font-size:12px;margin:0;">Cette alerte a été automatiquement marquée comme déclenchée dans Financy.</p>
+          <p style="color:#71717A;font-size:12px;margin:0;">Cette alerte a été automatiquement marquée comme déclenchée dans Finexa.</p>
         </td></tr>
         <tr><td style="padding:16px 32px;border-top:1px solid #27272A;text-align:center;">
-          <p style="color:#52525B;font-size:12px;margin:0;">Financy · Votre tableau de bord patrimonial</p>
+          <p style="color:#52525B;font-size:12px;margin:0;">Finexa · Votre tableau de bord patrimonial</p>
         </td></tr>
       </table>
     </td></tr>
   </table>
 </body>
 </html>`
-  return sendEmail(to, `🔔 Alerte ${opts.symbol} déclenchée — Financy`, html)
+  return sendEmail(to, `🔔 Alerte ${opts.symbol} déclenchée — Finexa`, html)
 }
 
 export async function sendOtpEmail(to: string, code: string): Promise<boolean> {
@@ -89,7 +89,7 @@ export async function sendOtpEmail(to: string, code: string): Promise<boolean> {
       body: JSON.stringify({
         from: EMAIL_FROM,
         to: [to],
-        subject: 'Votre code de vérification — Financy',
+        subject: 'Votre code de vérification — Finexa',
         html: `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -106,7 +106,7 @@ export async function sendOtpEmail(to: string, code: string): Promise<boolean> {
                   <span style="color:#09090B;font-weight:800;font-size:18px;line-height:36px;">F</span>
                 </td>
                 <td style="padding-left:12px;">
-                  <span style="color:#FAFAFA;font-weight:700;font-size:18px;">Financy</span>
+                  <span style="color:#FAFAFA;font-weight:700;font-size:18px;">Finexa</span>
                 </td>
               </tr>
             </table>
@@ -117,7 +117,7 @@ export async function sendOtpEmail(to: string, code: string): Promise<boolean> {
           <td style="padding:32px;">
             <p style="color:#A1A1AA;font-size:15px;margin:0 0 6px;line-height:1.5;">Bonjour,</p>
             <p style="color:#FAFAFA;font-size:15px;margin:0 0 28px;line-height:1.6;">
-              Voici votre code de vérification pour accéder à Financy :
+              Voici votre code de vérification pour accéder à Finexa :
             </p>
             <div style="background:#09090B;border:1px solid #3F3F46;border-radius:12px;padding:28px 24px;text-align:center;margin-bottom:28px;">
               <span style="font-size:42px;font-weight:800;letter-spacing:16px;color:#C9A84C;font-family:monospace;">${code}</span>
@@ -133,7 +133,7 @@ export async function sendOtpEmail(to: string, code: string): Promise<boolean> {
         <!-- Footer -->
         <tr>
           <td style="padding:16px 32px;border-top:1px solid #27272A;text-align:center;">
-            <p style="color:#52525B;font-size:12px;margin:0;">Financy · Votre tableau de bord patrimonial</p>
+            <p style="color:#52525B;font-size:12px;margin:0;">Finexa · Votre tableau de bord patrimonial</p>
           </td>
         </tr>
       </table>

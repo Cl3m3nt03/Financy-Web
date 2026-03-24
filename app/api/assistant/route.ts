@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const SYSTEM_PROMPT = `Tu es Financy, un assistant financier personnel intelligent intégré dans l'application de gestion de patrimoine de l'utilisateur.
+const SYSTEM_PROMPT = `Tu es Finexa, un assistant financier personnel intelligent intégré dans l'application de gestion de patrimoine de l'utilisateur.
 
 Tu aides avec :
 - Analyse et conseils sur le portefeuille (actions, ETF, crypto, immobilier, épargne)

@@ -38,10 +38,21 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 h-full w-60 bg-surface border-r border-border hidden lg:flex flex-col z-50">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
-        <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-          <Gem className="w-4 h-4 text-accent" strokeWidth={1.5} />
+        <div className="w-8 h-8 shrink-0">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-8 h-8">
+            <polygon points="16,2 28,11 16,30 4,11" fill="none" stroke="#BDEFFF" strokeWidth="0.8" strokeOpacity="0.6" />
+            <polygon points="16,2 22,11 16,11" fill="#BDEFFF" fillOpacity="0.25" stroke="#BDEFFF" strokeWidth="0.5" strokeOpacity="0.5" />
+            <polygon points="16,2 10,11 16,11" fill="#BDEFFF" fillOpacity="0.12" stroke="#BDEFFF" strokeWidth="0.5" strokeOpacity="0.5" />
+            <polygon points="16,2 28,11 22,11" fill="#BDEFFF" fillOpacity="0.08" stroke="#BDEFFF" strokeWidth="0.5" strokeOpacity="0.4" />
+            <polygon points="16,2 4,11 10,11" fill="#BDEFFF" fillOpacity="0.15" stroke="#BDEFFF" strokeWidth="0.5" strokeOpacity="0.4" />
+            <polygon points="16,11 22,11 16,30" fill="#BDEFFF" fillOpacity="0.18" stroke="#BDEFFF" strokeWidth="0.5" strokeOpacity="0.4" />
+            <polygon points="16,11 10,11 16,30" fill="#BDEFFF" fillOpacity="0.08" stroke="#BDEFFF" strokeWidth="0.5" strokeOpacity="0.3" />
+            <polygon points="28,11 22,11 16,30" fill="#BDEFFF" fillOpacity="0.05" stroke="#BDEFFF" strokeWidth="0.5" strokeOpacity="0.3" />
+            <polygon points="4,11 10,11 16,30" fill="#BDEFFF" fillOpacity="0.10" stroke="#BDEFFF" strokeWidth="0.5" strokeOpacity="0.3" />
+            <line x1="4" y1="11" x2="28" y2="11" stroke="#BDEFFF" strokeWidth="0.8" strokeOpacity="0.5" />
+          </svg>
         </div>
-        <span className="font-semibold text-text-primary tracking-tight">Financy</span>
+        <span className="font-semibold text-text-primary tracking-tight">Finexa</span>
       </div>
 
       {/* Nav */}

@@ -32,7 +32,7 @@ export default function LoginPage() {
   const [deviceToken, setDeviceToken] = useState('')
 
   useEffect(() => {
-    setDeviceToken(getCookie('financy_trusted'))
+    setDeviceToken(getCookie('finexa_trusted'))
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -56,7 +56,7 @@ export default function LoginPage() {
         try {
           const res = await fetch('/api/auth/device-token', { method: 'POST' })
           const data = await res.json()
-          if (data.token) setCookie('financy_trusted', data.token, 30)
+          if (data.token) setCookie('finexa_trusted', data.token, 30)
         } catch {}
       }
       router.push('/dashboard')

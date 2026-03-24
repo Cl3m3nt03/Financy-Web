@@ -56,7 +56,7 @@ export function Onboarding() {
       {/* Sparkles badge */}
       <div className="flex items-center gap-1.5 px-3 py-1 bg-accent/10 border border-accent/20 rounded-full text-xs font-medium text-accent mb-4">
         <Sparkles className="w-3 h-3" />
-        Bienvenue sur Financy
+        Bienvenue sur Finexa
       </div>
 
       <h1 className="text-2xl font-bold text-text-primary mb-2">
@@ -64,7 +64,7 @@ export function Onboarding() {
       </h1>
       <p className="text-text-muted text-sm max-w-sm leading-relaxed mb-8">
         {step === 0
-          ? 'Financy centralise tout votre patrimoine : comptes, investissements, immobilier et crypto. Commencez par ajouter vos premiers actifs.'
+          ? 'Finexa centralise tout votre patrimoine : comptes, investissements, immobilier et crypto. Commencez par ajouter vos premiers actifs.'
           : current.desc
         }
       </p>

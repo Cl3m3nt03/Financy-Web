@@ -27,13 +27,13 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Financy',
+  title: 'Finexa',
   description: 'Gérez votre patrimoine personnel',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Financy',
+    title: 'Finexa',
   },
   icons: {
     apple: '/icons/apple-touch-icon.png',
@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Prevent flash of wrong theme */}
         <script dangerouslySetInnerHTML={{ __html: `
           try {
-            var t = localStorage.getItem('financy-theme');
+            var t = localStorage.getItem('finexa-theme');
             if (t === 'light') document.documentElement.classList.add('light');
           } catch(e) {}
         ` }} />
