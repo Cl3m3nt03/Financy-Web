@@ -35,10 +35,10 @@ async function fetchSealedPrice(pricechartingId: string): Promise<number | null>
 // POST /api/pokemon/price — refresh prices for all user items
 export async function POST() {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const items = await prisma.pokemonItem.findMany({
-    where: { userId: session.user.id },
+    where: { userId: (session.user as any).id },
   })
 
   let updated = 0
@@ -66,7 +66,7 @@ export async function POST() {
 // GET /api/pokemon/price?cardId=xxx OR ?sealedId=xxx — fetch price for a single item
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const cardId = searchParams.get('cardId')

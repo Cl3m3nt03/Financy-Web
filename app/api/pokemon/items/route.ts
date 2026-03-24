@@ -5,10 +5,10 @@ import { prisma } from '@/lib/db'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const items = await prisma.pokemonItem.findMany({
-    where: { userId: session.user.id },
+    where: { userId: (session.user as any).id },
     orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json(items)
@@ -16,12 +16,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
   const item = await prisma.pokemonItem.create({
     data: {
-      userId: session.user.id,
+      userId: (session.user as any).id,
       itemType: body.itemType,
       name: body.name,
       setName: body.setName ?? null,

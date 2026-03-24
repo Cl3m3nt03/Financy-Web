@@ -61,7 +61,7 @@ async function searchSealed(query: string) {
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const query = searchParams.get('q')?.trim()
