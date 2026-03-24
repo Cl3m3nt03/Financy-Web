@@ -6,6 +6,33 @@ Application de gestion de patrimoine personnel — inspirée de Finary.
 
 ---
 
+## Nouveautés — session du 24 mars 2026 (suite)
+
+### Comparaison vs indices (WealthChart)
+- Boutons toggle **S&P 500 / CAC 40 / MSCI World** sur le graphe patrimoine du dashboard
+- Données Yahoo Finance (public, sans clé) normalisées en base 100 pour comparaison équitable
+- Affichage superposé en pointillés colorés sur le graphe AreaChart existant
+- Cache 1h côté serveur · endpoint `/api/benchmark`
+
+### Multi-devise live
+- Nouvel onglet **Devises** enrichi avec taux de change en direct (Open Exchange Rates)
+- Taux EUR→USD/GBP/CHF/JPY/CAD/AUD affichés en temps réel
+- Conversion de chaque exposition en EUR équivalent
+- Source affiché + bouton actualiser · endpoint `/api/exchange-rates`
+
+### Sparklines par position
+- Mini graphe 30 jours intégré dans chaque carte de position du portefeuille
+- Couleur rouge/verte selon la tendance du mois
+- Chargement lazy, cache 1h · endpoint `/api/sparkline`
+
+### Calendrier fiscal
+- Section **Calendrier fiscal** en bas de la page Rapport fiscal
+- Dates clés de l'année : ouverture/clôture déclarations, acomptes PFU, solde IR, IFU courtier
+- Code couleur par catégorie : Déclaration (bleu), Paiement (ambre), Info (vert)
+- Dates passées grisées, date du jour en alerte
+
+---
+
 ## Nouveautés — session du 24 mars 2026
 
 ### Recherche globale (Cmd+K)

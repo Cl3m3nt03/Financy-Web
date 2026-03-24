@@ -14,6 +14,8 @@ import { MOCK_ASSETS } from '@/services/mock-data'
 import { Holding } from '@/types'
 import { formatCurrency, cn } from '@/lib/utils'
 import { TrendingUp, TrendingDown, RefreshCw, LineChart, Gift, Globe, LayoutGrid, Table2, Wifi, WifiOff, Loader2, ShieldAlert } from 'lucide-react'
+import { CurrencyExposure } from '@/components/portfolio/currency-exposure'
+import { Sparkline } from '@/components/portfolio/sparkline'
 import { useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
@@ -140,9 +142,14 @@ function PnlCard({ holding, assetType, flash }: { holding: any; assetType: strin
         </div>
       </div>
 
+      {/* Sparkline 30j */}
+      <div className="mt-2 -mx-1">
+        <Sparkline symbol={holding.symbol} range="1mo" height={36} />
+      </div>
+
       {/* P&L bottom */}
       <div className={cn(
-        'flex items-center justify-center gap-1.5 py-2 rounded-xl font-mono font-bold text-sm mt-1',
+        'flex items-center justify-center gap-1.5 py-2 rounded-xl font-mono font-bold text-sm mt-2',
         isPos ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
       )}>
         {isPos ? '+' : ''}{formatCurrency(pnl, holding.currency)}
@@ -212,10 +219,6 @@ export default function PortfolioPage() {
     return map
   }, [enrichedHoldings])
   const totalForCurrency = Object.values(currencyMap).reduce((s, v) => s + v, 0)
-
-  const CURRENCY_COLORS: Record<string, string> = {
-    EUR: '#C9A84C', USD: '#10B981', GBP: '#6366F1', CHF: '#F97316', JPY: '#EC4899',
-  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -482,34 +485,8 @@ export default function PortfolioPage() {
         {tab === 'currencies' && (
           <Card>
             <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Globe className="w-4 h-4 text-accent" /> Exposition par devise</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              {totalForCurrency === 0 ? (
-                <p className="text-text-muted text-sm">Aucune position.</p>
-              ) : (
-                Object.entries(currencyMap)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([currency, val]) => {
-                    const pct = (val / totalForCurrency) * 100
-                    const color = CURRENCY_COLORS[currency] ?? '#6B7280'
-                    return (
-                      <div key={currency}>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-mono font-bold text-text-primary" style={{ color }}>{currency}</span>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-sm font-mono text-text-primary">{formatCurrency(val)}</span>
-                            <span className="text-text-muted text-xs ml-2">{pct.toFixed(1)}%</span>
-                          </div>
-                        </div>
-                        <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%`, background: color }} />
-                        </div>
-                      </div>
-                    )
-                  })
-              )}
+            <CardContent>
+              <CurrencyExposure currencyMap={currencyMap} totalForCurrency={totalForCurrency} />
             </CardContent>
           </Card>
         )}

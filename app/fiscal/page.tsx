@@ -5,7 +5,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency, cn } from '@/lib/utils'
-import { Receipt, TrendingUp, ChevronDown, ChevronUp, Info, Download, FileText, Copy, Check } from 'lucide-react'
+import { Receipt, TrendingUp, ChevronDown, ChevronUp, Info, Download, FileText, Copy, Check, CalendarDays } from 'lucide-react'
+import { FiscalCalendar } from '@/components/fiscal/fiscal-calendar'
 
 interface FiscalLine {
   date: string
@@ -382,6 +383,19 @@ export default function FiscalPage() {
 
           </div>
         )}
+
+        {/* Calendrier fiscal */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CalendarDays className="w-4 h-4 text-accent" />
+              Calendrier fiscal {year}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FiscalCalendar year={year} />
+          </CardContent>
+        </Card>
 
       </div>
     </div>
