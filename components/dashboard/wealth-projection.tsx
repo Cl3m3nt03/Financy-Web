@@ -141,7 +141,7 @@ export function WealthProjection({ currentValue }: Props) {
                   className={cn(
                     'flex-1 py-1.5 text-xs rounded-lg font-medium transition-all',
                     horizon === p.years
-                      ? 'bg-accent text-white shadow-sm'
+                      ? 'bg-accent text-obsidian shadow-sm'
                       : 'text-text-muted hover:text-text-primary'
                   )}
                 >
@@ -162,7 +162,7 @@ export function WealthProjection({ currentValue }: Props) {
                   className={cn(
                     'flex-1 py-1.5 text-[10px] rounded-lg font-medium transition-all',
                     rateKey === p.label
-                      ? 'bg-accent text-white shadow-sm'
+                      ? 'bg-accent text-obsidian shadow-sm'
                       : 'text-text-muted hover:text-text-primary'
                   )}
                 >

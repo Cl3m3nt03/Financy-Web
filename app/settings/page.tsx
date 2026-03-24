@@ -141,7 +141,7 @@ export default function SettingsPage() {
                 </p>
                 {!tfaEnabled ? (
                   <button onClick={handleSetup2FA} disabled={tfaLoading}
-                    className="flex items-center gap-2 bg-accent hover:bg-accent-dark disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+                    className="flex items-center gap-2 bg-accent hover:bg-accent-dark disabled:opacity-50 text-obsidian px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors">
                     {tfaLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
                     Activer le 2FA par email
                   </button>

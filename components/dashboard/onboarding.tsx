@@ -90,7 +90,7 @@ export function Onboarding() {
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
         <Link
           href="/assets"
-          className="flex-1 flex items-center justify-center gap-2 bg-accent hover:bg-blue-600 text-white px-6 py-3 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-accent/20"
+          className="flex-1 flex items-center justify-center gap-2 bg-accent hover:bg-blue-600 text-obsidian px-6 py-3 rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-accent/20"
         >
           <Wallet className="w-4 h-4" />
           Ajouter mes actifs

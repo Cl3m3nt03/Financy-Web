@@ -90,7 +90,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-10">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-white" />
+            <TrendingUp className="w-5 h-5 text-obsidian" />
           </div>
           <span className="text-2xl font-bold text-text-primary">Wealth Tracker</span>
         </div>
@@ -153,7 +153,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition-colors"
+                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 text-obsidian font-semibold rounded-xl py-3 transition-colors"
                 >
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </button>
@@ -230,7 +230,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading || totpCode.length < 6}
-                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition-colors"
+                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 text-obsidian font-semibold rounded-xl py-3 transition-colors"
                 >
                   {loading ? 'Vérification...' : 'Vérifier'}
                 </button>

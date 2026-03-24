@@ -663,7 +663,7 @@ export function AssetForm({ onClose, editAsset }: AssetFormProps) {
             <button
               type="submit"
               disabled={isPending || (isFinancial && !selectedResult && !editAsset)}
-              className="flex-1 py-2.5 rounded-xl bg-accent hover:bg-accent-dark disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+              className="flex-1 py-2.5 rounded-xl bg-accent hover:bg-accent-dark disabled:opacity-40 disabled:cursor-not-allowed text-obsidian text-sm font-semibold transition-colors"
             >
               {isPending
                 ? 'Enregistrement...'

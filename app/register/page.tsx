@@ -103,7 +103,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-3 mb-10">
           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-white" />
+            <TrendingUp className="w-5 h-5 text-obsidian" />
           </div>
           <span className="text-2xl font-bold text-text-primary">Wealth Tracker</span>
         </div>
@@ -218,7 +218,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading || rules.some(r => !r.ok)}
-                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors mt-2"
+                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-obsidian font-semibold rounded-xl py-3 transition-colors mt-2"
                 >
                   {loading ? 'Création...' : 'Continuer →'}
                 </button>
@@ -271,7 +271,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading || otpCode.length < 6}
-                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3 transition-colors"
+                  className="w-full bg-accent hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed text-obsidian font-semibold rounded-xl py-3 transition-colors"
                 >
                   {loading ? 'Vérification...' : 'Vérifier et accéder'}
                 </button>

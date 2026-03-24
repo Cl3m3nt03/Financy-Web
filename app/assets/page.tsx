@@ -73,7 +73,7 @@ export default function AssetsPage() {
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-accent hover:bg-accent-dark text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-accent hover:bg-accent-dark text-obsidian px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
             Ajouter un actif
@@ -204,7 +204,7 @@ export default function AssetsPage() {
             <p className="text-text-muted text-sm mb-6">Commencez par ajouter vos comptes, investissements ou biens immobiliers.</p>
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-accent hover:bg-accent-dark text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+              className="flex items-center gap-2 bg-accent hover:bg-accent-dark text-obsidian px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
             >
               <Plus className="w-4 h-4" />
               Ajouter mon premier actif

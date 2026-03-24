@@ -23,6 +23,7 @@ const config: Config = {
 
         // ── Accent & Sémantiques (Obsidian Diamond) ─────────────────────────
         accent:           '#BDEFFF',   // Diamond Blue
+        'accent-dark':    '#9ADCF5',   // Diamond Blue hover (slightly deeper)
         'accent-dim':     '#7BC8E8',   // Diamond Blue atténué
         positive:         '#3D5A80',   // Sapphire Blue (remplace vert)
         'positive-light': '#4F7AA8',   // Sapphire clair

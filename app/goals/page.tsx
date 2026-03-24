@@ -81,7 +81,7 @@ export default function GoalsPage() {
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 bg-accent hover:bg-accent-dark text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-accent hover:bg-accent-dark text-obsidian px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
             Nouvel objectif
@@ -225,7 +225,7 @@ export default function GoalsPage() {
                   Annuler
                 </button>
                 <button type="submit" disabled={createMutation.isPending}
-                  className="flex-1 py-2.5 rounded-xl bg-accent hover:bg-accent-dark disabled:opacity-50 text-white text-sm font-semibold transition-colors">
+                  className="flex-1 py-2.5 rounded-xl bg-accent hover:bg-accent-dark disabled:opacity-50 text-obsidian text-sm font-semibold transition-colors">
                   {createMutation.isPending ? 'Création...' : 'Créer'}
                 </button>
               </div>
