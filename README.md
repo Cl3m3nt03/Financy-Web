@@ -6,6 +6,41 @@ Application de gestion de patrimoine personnel — inspirée de Finary.
 
 ---
 
+## Nouveautés — session du 24 mars 2026
+
+### Recherche globale (Cmd+K)
+- Modal de recherche instantanée accessible via `Cmd+K` / `Ctrl+K` depuis n'importe quelle page
+- Recherche simultanée dans les actifs, transactions et objectifs de l'utilisateur
+- Navigation directe vers la page correspondante au clic
+
+### Répartition sectorielle
+- Nouvel onglet **Secteurs** dans le Portefeuille
+- Donut chart + tableau avec pourcentage et valeur par secteur
+- Mapping de 70+ symboles : Tech, Finance, Luxe, Énergie, ETF, Crypto, etc.
+
+### Milestones patrimoniaux
+- Widget **Paliers patrimoniaux** sur le dashboard
+- Paliers : 🌱 1k → 💡 5k → ⭐ 10k → 🔥 25k → 💎 50k → 🏆 100k → 🦁 250k → 🚀 500k → 👑 1M
+- Barre de progression vers le prochain palier + montant restant à atteindre
+
+### Mode clair / sombre
+- Toggle **Mode clair / Mode sombre** dans la sidebar
+- Persistance via localStorage, anti-flash au chargement (script inline)
+- Couleurs complètes via CSS variables, aucune classe Tailwind `dark:` requise
+
+### Alertes de cours actives
+- Vérification automatique des alertes toutes les 60 secondes
+- Toast de notification en bas à droite si une alerte est déclenchée
+- Marquage automatique en base de données (`triggered: true`)
+- Alertes configurables depuis Paramètres → Alertes de cours
+
+### 2FA — Appareils de confiance (30 jours)
+- Après validation du 2FA, checkbox "Se souvenir de cet appareil pendant 30 jours"
+- Token HMAC signé (NEXTAUTH_SECRET) stocké dans un cookie `financy_trusted`
+- Au login suivant sur le même appareil : 2FA automatiquement skipé
+
+---
+
 ## Nouveautés — session du 23 mars 2026
 
 ### Projection patrimoniale
