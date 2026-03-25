@@ -15,7 +15,6 @@ let _clientTokenExpiry = 0
 export async function getClientToken(): Promise<string> {
   if (_clientToken && Date.now() < _clientTokenExpiry) return _clientToken
 
-  console.log('[TINK] id=', CLIENT_ID?.slice(0,8), 'len=', CLIENT_ID?.length, 'secret=', CLIENT_SECRET?.slice(0,8), 'slen=', CLIENT_SECRET?.length)
   const res = await fetch(`${BASE}/api/v1/oauth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
