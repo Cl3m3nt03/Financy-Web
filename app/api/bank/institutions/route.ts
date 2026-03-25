@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { listInstitutions } from '@/lib/gocardless'
+import { listBanks } from '@/lib/enablebanking'
 
 // GET /api/bank/institutions?country=FR&q=revolut
 export async function GET(req: NextRequest) {
@@ -13,10 +13,8 @@ export async function GET(req: NextRequest) {
   const q       = searchParams.get('q')?.toLowerCase() ?? ''
 
   try {
-    const institutions = await listInstitutions(country)
-    const filtered = q
-      ? institutions.filter(i => i.name.toLowerCase().includes(q))
-      : institutions
+    const banks    = await listBanks(country)
+    const filtered = q ? banks.filter(b => b.name.toLowerCase().includes(q)) : banks
     return NextResponse.json(filtered.slice(0, 20))
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })

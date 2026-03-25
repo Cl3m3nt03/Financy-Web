@@ -2,66 +2,57 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { getRequisition, getAccountDetails, getAccountBalances, pickBalance } from '@/lib/gocardless'
+import { getSessionAccounts, getAccountBalances, pickBalance } from '@/lib/enablebanking'
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions)
   const userId  = session?.user ? (session.user as any).id : null
 
   const { searchParams } = new URL(req.url)
-  const ref   = searchParams.get('ref')   // GoCardless requisition ID
+  const code  = searchParams.get('code')   // auth_code from EnableBanking
+  const state = searchParams.get('state')  // = connectionId
   const error = searchParams.get('error')
 
   const appUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
 
-  if (error || !ref) {
-    return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=${error ?? 'no_ref'}`)
+  if (error || !code || !state) {
+    return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=${error ?? 'missing_params'}`)
   }
 
   try {
-    // Find the pending connection by requisition ID (stored in tinkUserId)
     const connection = userId
-      ? await prisma.bankConnection.findFirst({
-          where: { userId, tinkUserId: ref, status: 'PENDING' },
-        })
+      ? await prisma.bankConnection.findFirst({ where: { id: state, userId, status: 'PENDING' } })
       : null
 
     if (!connection) {
       return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=no_connection`)
     }
 
-    // Get the requisition + its account IDs
-    const requisition = await getRequisition(ref)
+    const accounts = await getSessionAccounts(code)
 
-    if (!requisition.accounts?.length) {
-      await prisma.bankConnection.update({
-        where: { id: connection.id },
-        data:  { status: 'ERROR' },
-      })
+    if (!accounts.length) {
+      await prisma.bankConnection.update({ where: { id: connection.id }, data: { status: 'ERROR' } })
       return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=no_accounts`)
     }
 
-    // Fetch details + balances for each account
-    for (const accountId of requisition.accounts) {
-      const [details, balances] = await Promise.all([
-        getAccountDetails(accountId),
-        getAccountBalances(accountId),
-      ])
+    for (const account of accounts) {
+      const balances = await getAccountBalances(account.uid)
       const { amount, currency, type } = pickBalance(balances)
+      const iban = account.account_id?.iban ?? null
 
-      const existing = await prisma.bankAccount.findUnique({ where: { nordigenId: accountId } })
+      const existing = await prisma.bankAccount.findUnique({ where: { nordigenId: account.uid } })
       if (existing) {
         await prisma.bankAccount.update({
-          where: { nordigenId: accountId },
+          where: { nordigenId: account.uid },
           data:  { balance: amount, currency, updatedAt: new Date() },
         })
       } else {
         await prisma.bankAccount.create({
           data: {
             connectionId: connection.id,
-            nordigenId:   accountId,
-            iban:         details.iban ?? null,
-            name:         details.name ?? null,
+            nordigenId:   account.uid,
+            iban,
+            name:         account.name ?? account.details ?? iban ?? 'Compte',
             currency,
             balance:      amount,
             balanceType:  type,
@@ -72,15 +63,15 @@ export async function GET(req: NextRequest) {
 
     await prisma.bankConnection.update({
       where: { id: connection.id },
-      data:  { status: 'LINKED', lastSyncAt: new Date(), institutionName: requisition.institution_id },
+      data:  { status: 'LINKED', lastSyncAt: new Date(), accessToken: code },
     })
 
     return NextResponse.redirect(`${appUrl}/settings?bank=linked`)
   } catch (e: any) {
-    console.error('[GC CALLBACK]', e)
-    if (userId) {
+    console.error('[EB CALLBACK]', e)
+    if (userId && state) {
       await prisma.bankConnection.updateMany({
-        where: { userId, tinkUserId: ref ?? undefined, status: 'PENDING' },
+        where: { id: state, userId, status: 'PENDING' },
         data:  { status: 'ERROR' },
       })
     }
