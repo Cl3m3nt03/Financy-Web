@@ -51,9 +51,8 @@ export async function createAuthorizationGrant(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      user_id:  externalUserId,
-      scope:    'accounts:read,balances:read,identity:read',
-      id_hint:  userEmail,
+      user_id: externalUserId,
+      scope:   'accounts:read,balances:read,transactions:read',
     }),
   })
   if (!res.ok) {
