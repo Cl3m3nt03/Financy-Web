@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { Header } from '@/components/layout/header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Key, Database, Shield, Lock, Eye, EyeOff, Check, AlertCircle, Loader2, Mail, Bell, Building2 } from 'lucide-react'
@@ -265,7 +265,9 @@ export default function SettingsPage() {
             </div>
           </CardHeader>
           <CardContent className="pt-4">
-            <BankConnections />
+            <Suspense fallback={null}>
+              <BankConnections />
+            </Suspense>
           </CardContent>
         </Card>
 
