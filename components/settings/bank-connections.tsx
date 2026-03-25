@@ -95,8 +95,9 @@ export function BankConnections() {
     setBankQuery('')
     setBanksLoading(true)
     try {
-      const res = await fetch('/api/bank/institutions?country=FR')
-      setBanks(await res.json())
+      const res  = await fetch('/api/bank/institutions?country=FR')
+      const data = await res.json()
+      setBanks(Array.isArray(data) ? data : [])
     } catch {
       setBanks([])
     } finally {
@@ -108,8 +109,11 @@ export function BankConnections() {
     setBankQuery(q)
     setBanksLoading(true)
     try {
-      const res = await fetch(`/api/bank/institutions?country=FR&q=${encodeURIComponent(q)}`)
-      setBanks(await res.json())
+      const res  = await fetch(`/api/bank/institutions?country=FR&q=${encodeURIComponent(q)}`)
+      const data = await res.json()
+      setBanks(Array.isArray(data) ? data : [])
+    } catch {
+      setBanks([])
     } finally {
       setBanksLoading(false)
     }
