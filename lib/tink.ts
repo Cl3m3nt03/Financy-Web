@@ -4,8 +4,8 @@
  */
 
 const BASE          = 'https://api.tink.com'
-const CLIENT_ID     = process.env.TINK_CLIENT_ID!
-const CLIENT_SECRET = process.env.TINK_CLIENT_SECRET!
+const CLIENT_ID     = process.env.TINK_CLIENT_ID?.trim() ?? ''
+const CLIENT_SECRET = process.env.TINK_CLIENT_SECRET?.trim() ?? ''
 
 // ── Client token (client_credentials) ────────────────────────────────────────
 
@@ -27,6 +27,7 @@ export async function getClientToken(): Promise<string> {
   })
   if (!res.ok) {
     const err = await res.text()
+    console.error('[TINK AUTH FAIL]', res.status, err, '| id_len=', CLIENT_ID.length, '| secret_len=', CLIENT_SECRET.length)
     throw new Error(`Tink client auth failed: ${res.status} ${err}`)
   }
   const data = await res.json()
