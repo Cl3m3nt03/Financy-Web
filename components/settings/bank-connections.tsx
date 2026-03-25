@@ -41,11 +41,17 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   OTHER:      'Autre',
 }
 
+interface EBBank { name: string; country: string; bic?: string; logo?: string }
+
 export function BankConnections() {
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
   const [connecting, setConnecting] = useState(false)
   const [feedback, setFeedback]     = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+  const [showPicker, setShowPicker] = useState(false)
+  const [bankQuery, setBankQuery]   = useState('')
+  const [banks, setBanks]           = useState<EBBank[]>([])
+  const [banksLoading, setBanksLoading] = useState(false)
 
   const { data: connections = [], isLoading } = useQuery<BankConnection[]>({
     queryKey: ['bank-connections'],
@@ -84,10 +90,40 @@ export function BankConnections() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bank-connections'] }),
   })
 
-  async function handleConnect() {
+  async function openPicker() {
+    setShowPicker(true)
+    setBankQuery('')
+    setBanksLoading(true)
+    try {
+      const res = await fetch('/api/bank/institutions?country=FR')
+      setBanks(await res.json())
+    } catch {
+      setBanks([])
+    } finally {
+      setBanksLoading(false)
+    }
+  }
+
+  async function handleBankSearch(q: string) {
+    setBankQuery(q)
+    setBanksLoading(true)
+    try {
+      const res = await fetch(`/api/bank/institutions?country=FR&q=${encodeURIComponent(q)}`)
+      setBanks(await res.json())
+    } finally {
+      setBanksLoading(false)
+    }
+  }
+
+  async function handleConnect(bankName: string) {
+    setShowPicker(false)
     setConnecting(true)
     try {
-      const res  = await fetch('/api/bank/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      const res  = await fetch('/api/bank/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bankName, country: 'FR' }),
+      })
       const data = await res.json()
       if (data.link) {
         window.location.href = data.link
@@ -120,10 +156,10 @@ export function BankConnections() {
 
       <div className="flex items-center justify-between">
         <p className="text-text-muted text-sm max-w-sm">
-          Connectez vos comptes en lecture seule via Tink — Revolut, Boursorama, BNP, +2000 banques européennes.
+          Connectez vos comptes en lecture seule — Revolut, Boursorama, BNP, +2500 banques européennes.
         </p>
         <button
-          onClick={handleConnect}
+          onClick={openPicker}
           disabled={connecting}
           className="flex items-center gap-1.5 bg-accent hover:bg-amber-500 text-background font-semibold text-xs px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
         >
@@ -131,6 +167,47 @@ export function BankConnections() {
           {connecting ? 'Redirection…' : 'Connecter une banque'}
         </button>
       </div>
+
+      {/* Bank picker modal */}
+      {showPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-surface-1 border border-border rounded-2xl w-full max-w-md p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-text-primary">Choisissez votre banque</h3>
+              <button onClick={() => setShowPicker(false)} className="text-text-muted hover:text-text-primary">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <input
+              autoFocus
+              type="text"
+              value={bankQuery}
+              onChange={e => handleBankSearch(e.target.value)}
+              placeholder="Rechercher (ex: Revolut, BNP, Boursorama…)"
+              className="w-full bg-surface-2 border border-border rounded-xl px-3 py-2.5 text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent mb-3"
+            />
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              {banksLoading ? (
+                <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-text-muted" /></div>
+              ) : banks.length === 0 ? (
+                <p className="text-center text-text-muted text-sm py-6">Aucune banque trouvée</p>
+              ) : banks.map(bank => (
+                <button
+                  key={bank.name + bank.bic}
+                  onClick={() => handleConnect(bank.name)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface-2 transition-colors text-left"
+                >
+                  {bank.logo
+                    ? <img src={bank.logo} alt="" className="w-7 h-7 rounded-lg object-contain bg-white p-0.5" />
+                    : <div className="w-7 h-7 rounded-lg bg-surface-2 flex items-center justify-center"><Building2 className="w-3.5 h-3.5 text-text-muted" /></div>
+                  }
+                  <span className="text-sm text-text-primary font-medium">{bank.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Connections list */}
       {isLoading ? (
@@ -235,7 +312,7 @@ export function BankConnections() {
       )}
 
       <p className="text-xs text-text-muted">
-        Connexion sécurisée en lecture seule via Tink (Visa). Aucune action de paiement possible.
+        Connexion sécurisée en lecture seule via Enable Banking (PSD2). Aucune action de paiement possible.
       </p>
     </div>
   )
