@@ -1,80 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { getSessionAccounts, getAccountBalances, pickBalance } from '@/lib/enablebanking'
+import { exchangeCode } from '@/lib/tink'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  const userId  = session?.user ? (session.user as any).id : null
-
-  const { searchParams } = new URL(req.url)
-  const code  = searchParams.get('code')   // auth_code from EnableBanking
-  const state = searchParams.get('state')  // = connectionId
-  const error = searchParams.get('error')
-
-  const appUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
-
-  if (error || !code || !state) {
-    return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=${error ?? 'missing_params'}`)
-  }
+  const appUrl = (process.env.NEXTAUTH_URL ?? 'https://finexa.vercel.app').trim()
+  console.log('[CALLBACK] start', req.url.slice(0, 100))
 
   try {
-    const connection = userId
-      ? await prisma.bankConnection.findFirst({ where: { id: state, userId, status: 'PENDING' } })
-      : null
+    const { searchParams } = new URL(req.url)
+    const code  = searchParams.get('code')
+    const state = searchParams.get('state')
+    const error = searchParams.get('error')
+
+    if (error || !code || !state) {
+      return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=${error ?? 'missing_params'}`)
+    }
+    // Look up by state (connectionId) — session may not be available in redirect callback
+    const connection = await prisma.bankConnection.findFirst({
+      where: { id: state, status: 'PENDING' },
+    })
 
     if (!connection) {
       return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=no_connection`)
     }
 
-    const accounts = await getSessionAccounts(code)
-
-    if (!accounts.length) {
-      await prisma.bankConnection.update({ where: { id: connection.id }, data: { status: 'ERROR' } })
-      return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=no_accounts`)
-    }
-
-    for (const account of accounts) {
-      const balances = await getAccountBalances(account.uid)
-      const { amount, currency, type } = pickBalance(balances)
-      const iban = account.account_id?.iban ?? null
-
-      const existing = await prisma.bankAccount.findUnique({ where: { nordigenId: account.uid } })
-      if (existing) {
-        await prisma.bankAccount.update({
-          where: { nordigenId: account.uid },
-          data:  { balance: amount, currency, updatedAt: new Date() },
-        })
-      } else {
-        await prisma.bankAccount.create({
-          data: {
-            connectionId: connection.id,
-            nordigenId:   account.uid,
-            iban,
-            name:         account.name ?? account.details ?? iban ?? 'Compte',
-            currency,
-            balance:      amount,
-            balanceType:  type,
-          },
-        })
-      }
-    }
+    // Exchange code for tokens and store — account sync happens in /api/bank/sync
+    const tokens = await exchangeCode(code)
 
     await prisma.bankConnection.update({
       where: { id: connection.id },
-      data:  { status: 'LINKED', lastSyncAt: new Date(), accessToken: code },
+      data:  {
+        status:       'LINKED',
+        accessToken:  tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        lastSyncAt:   new Date(),
+      },
     })
 
     return NextResponse.redirect(`${appUrl}/settings?bank=linked`)
   } catch (e: any) {
-    console.error('[EB CALLBACK]', e)
-    if (userId && state) {
-      await prisma.bankConnection.updateMany({
-        where: { id: state, userId, status: 'PENDING' },
-        data:  { status: 'ERROR' },
-      })
-    }
+    console.error('[TINK CALLBACK]', e)
     return NextResponse.redirect(`${appUrl}/settings?bank=error&reason=callback_failed`)
   }
 }

@@ -22,7 +22,7 @@ export async function getClientToken(): Promise<string> {
       grant_type:    'client_credentials',
       client_id:     CLIENT_ID,
       client_secret: CLIENT_SECRET,
-      scope:         'authorization:grant',
+      scope:         'authorization:grant user:create',
     }),
   })
   if (!res.ok) {
@@ -36,44 +36,15 @@ export async function getClientToken(): Promise<string> {
   return _clientToken
 }
 
-// ── Authorization grant (per user) ───────────────────────────────────────────
+// ── Tink Link URL (no pre-created user needed) ────────────────────────────────
 
-export async function createAuthorizationGrant(
-  externalUserId: string,
-  userEmail: string,
-): Promise<string> {
-  const clientToken = await getClientToken()
-
-  const res = await fetch(`${BASE}/api/v1/oauth/authorization-grant`, {
-    method: 'POST',
-    headers: {
-      Authorization:  `Bearer ${clientToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      user_id: externalUserId,
-      scope:   'accounts:read,balances:read,transactions:read',
-    }),
-  })
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Tink authorization grant failed: ${res.status} ${err}`)
-  }
-  const data = await res.json()
-  return data.code as string
-}
-
-// ── Tink Link URL ─────────────────────────────────────────────────────────────
-
-export function buildTinkLinkUrl(authCode: string, redirectUri: string): string {
+export function buildTinkLinkUrl(redirectUri: string, state: string): string {
   const params = new URLSearchParams({
-    client_id:          CLIENT_ID,
-    authorization_flow: 'REDIRECT',
-    redirect_uri:       redirectUri,
-    authorization_code: authCode,
-    market:             'FR',
-    locale:             'fr_FR',
-    scope:              'accounts:read,balances:read',
+    client_id:    CLIENT_ID,
+    redirect_uri: redirectUri,
+    market:       'FR',
+    locale:       'fr_FR',
+    state,
   })
   return `https://link.tink.com/1.0/transactions/connect-accounts?${params}`
 }

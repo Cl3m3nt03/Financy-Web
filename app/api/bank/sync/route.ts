@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { getSessionAccounts, getAccountBalances, pickBalance } from '@/lib/enablebanking'
+import { refreshAccessToken, fetchAccounts, getAccountBalance } from '@/lib/tink'
 
 // GET: list all connections for current user
 export async function GET() {
@@ -35,29 +35,40 @@ export async function POST(req: NextRequest) {
   if (!connection.accessToken) return NextResponse.json({ error: 'Pas de session code' }, { status: 400 })
 
   try {
-    const accounts = await getSessionAccounts(connection.accessToken)
+    let accessToken = connection.accessToken!
+
+    // Refresh token if available
+    if (connection.refreshToken) {
+      const tokens = await refreshAccessToken(connection.refreshToken)
+      accessToken  = tokens.access_token
+      await prisma.bankConnection.update({
+        where: { id: connection.id },
+        data:  { accessToken: tokens.access_token, refreshToken: tokens.refresh_token },
+      })
+    }
+
+    const accounts = await fetchAccounts(accessToken)
 
     for (const account of accounts) {
-      const balances = await getAccountBalances(account.uid)
-      const { amount, currency, type } = pickBalance(balances)
-      const iban = account.account_id?.iban ?? null
+      const { amount, currency } = getAccountBalance(account)
+      const iban = account.identifiers?.iban?.iban ?? null
 
-      const existing = await prisma.bankAccount.findUnique({ where: { nordigenId: account.uid } })
+      const existing = await prisma.bankAccount.findUnique({ where: { nordigenId: account.id } })
       if (existing) {
         await prisma.bankAccount.update({
-          where: { nordigenId: account.uid },
+          where: { nordigenId: account.id },
           data:  { balance: amount, currency, updatedAt: new Date() },
         })
       } else {
         await prisma.bankAccount.create({
           data: {
             connectionId: connection.id,
-            nordigenId:   account.uid,
+            nordigenId:   account.id,
             iban,
             name:         account.name ?? iban ?? 'Compte',
             currency,
             balance:      amount,
-            balanceType:  type,
+            balanceType:  account.type,
           },
         })
       }

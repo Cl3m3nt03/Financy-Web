@@ -22,8 +22,8 @@ function makeJwt(): string {
   const privateKey = getPrivateKey()
   const now = Math.floor(Date.now() / 1000)
 
-  const header  = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url')
-  const payload = Buffer.from(JSON.stringify({ iss: APP_ID, iat: now, exp: now + 3600 })).toString('base64url')
+  const header  = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', kid: APP_ID })).toString('base64url')
+  const payload = Buffer.from(JSON.stringify({ iss: APP_ID, aud: 'api.enablebanking.com', iat: now, exp: now + 3600 })).toString('base64url')
   const input   = `${header}.${payload}`
 
   const sign = createSign('RSA-SHA256')
