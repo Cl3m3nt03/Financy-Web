@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
   const email   = (session.user as any).email ?? userId
 
   try {
+    console.log('[TINK CONNECT] CLIENT_ID:', process.env.TINK_CLIENT_ID?.slice(0, 8) + '...')
     const appUrl     = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
     const redirectUri = `${appUrl}/api/bank/callback`
     const tinkUserId = `financy-${userId}`
