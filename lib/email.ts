@@ -1,7 +1,6 @@
-const RESEND_API_KEY = process.env.RESEND_API_KEY
-const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Finexa <onboarding@resend.dev>'
-
 async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY
+  const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Financy <onboarding@resend.dev>'
   if (!RESEND_API_KEY) {
     console.warn(`[FINANCY EMAIL] RESEND_API_KEY manquant — email pour ${to} non envoyé`)
     return false
@@ -124,6 +123,8 @@ export async function sendAlertEmail(
 }
 
 export async function sendOtpEmail(to: string, code: string): Promise<boolean> {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY
+  const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Financy <onboarding@resend.dev>'
   if (!RESEND_API_KEY) {
     console.warn(`[FINANCY EMAIL] RESEND_API_KEY manquant — code OTP pour ${to} : ${code}`)
     return false
