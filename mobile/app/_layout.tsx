@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Stack, router } from 'expo-router'
+import { Stack, useRouter, useSegments } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -10,26 +10,44 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 })
 
-export default function RootLayout() {
-  const { init, initialized, token } = useAuthStore()
-
-  useEffect(() => { init() }, [])
+function AuthGuard() {
+  const { token, initialized } = useAuthStore()
+  const segments = useSegments()
+  const router   = useRouter()
 
   useEffect(() => {
     if (!initialized) return
-    if (token) {
+    const inTabs  = segments[0] === '(tabs)'
+    const inLogin = segments[0] === 'login'
+
+    if (token && !inTabs) {
       router.replace('/(tabs)')
-    } else {
+    } else if (!token && !inLogin) {
       router.replace('/login')
     }
   }, [initialized, token])
+
+  return null
+}
+
+export default function RootLayout() {
+  const { init } = useAuthStore()
+
+  useEffect(() => { init() }, [])
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="light" backgroundColor={colors.background} />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-          <Stack.Screen name="login" />
+        <AuthGuard />
+        <Stack
+          screenOptions={{
+            headerShown:  false,
+            contentStyle: { backgroundColor: colors.background },
+            animation:    'fade',
+          }}
+        >
+          <Stack.Screen name="login"  />
           <Stack.Screen name="(tabs)" />
         </Stack>
       </QueryClientProvider>
