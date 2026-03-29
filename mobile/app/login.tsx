@@ -66,7 +66,12 @@ export default function LoginScreen() {
           autoCorrect={false}
         />
 
-        <Text style={[s.label, { marginTop: spacing.md }]}>Mot de passe</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.md }}>
+          <Text style={s.label}>Mot de passe</Text>
+          <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+            <Text style={{ color: colors.accent, fontSize: 12 }}>Mot de passe oublié ?</Text>
+          </TouchableOpacity>
+        </View>
         <TextInput
           style={s.input}
           value={password}

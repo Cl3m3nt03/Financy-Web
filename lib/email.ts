@@ -20,6 +20,56 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
   }
 }
 
+export async function sendPasswordResetEmail(to: string, name: string | undefined, resetUrl: string): Promise<boolean> {
+  const firstName = name ? name.split(' ')[0] : 'là'
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#09090B;font-family:Inter,-apple-system,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="min-height:100vh;background:#09090B;">
+    <tr><td align="center" style="padding:40px 16px;">
+      <table width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background:#18181B;border:1px solid #27272A;border-radius:16px;overflow:hidden;">
+        <tr>
+          <td style="padding:28px 32px 20px;border-bottom:1px solid #27272A;">
+            <table cellpadding="0" cellspacing="0"><tr>
+              <td style="width:36px;height:36px;background:#C9A84C;border-radius:10px;text-align:center;vertical-align:middle;">
+                <span style="color:#09090B;font-weight:800;font-size:18px;line-height:36px;">F</span>
+              </td>
+              <td style="padding-left:12px;"><span style="color:#FAFAFA;font-weight:700;font-size:18px;">Financy</span></td>
+            </tr></table>
+          </td>
+        </tr>
+        <tr><td style="padding:32px;">
+          <p style="color:#A1A1AA;font-size:15px;margin:0 0 6px;">Bonjour ${firstName},</p>
+          <p style="color:#FAFAFA;font-size:15px;margin:0 0 24px;line-height:1.6;">
+            Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.
+          </p>
+          <div style="text-align:center;margin-bottom:28px;">
+            <a href="${resetUrl}" style="display:inline-block;background:#C9A84C;color:#09090B;font-weight:700;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+              Réinitialiser mon mot de passe
+            </a>
+          </div>
+          <p style="color:#71717A;font-size:13px;margin:0 0 8px;line-height:1.6;">
+            Ce lien expire dans <strong style="color:#A1A1AA;">1 heure</strong>.
+          </p>
+          <p style="color:#71717A;font-size:13px;margin:0;line-height:1.6;">
+            Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+          </p>
+          <div style="margin-top:20px;padding:12px 16px;background:#09090B;border-radius:8px;border:1px solid #3F3F46;">
+            <p style="color:#52525B;font-size:11px;margin:0;word-break:break-all;">Lien : ${resetUrl}</p>
+          </div>
+        </td></tr>
+        <tr><td style="padding:16px 32px;border-top:1px solid #27272A;text-align:center;">
+          <p style="color:#52525B;font-size:12px;margin:0;">Financy · Votre tableau de bord patrimonial</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+  return sendEmail(to, '🔑 Réinitialisation de votre mot de passe — Financy', html)
+}
+
 export function generateOtpCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
