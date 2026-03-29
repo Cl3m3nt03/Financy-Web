@@ -92,6 +92,15 @@ export default function LoginScreen() {
             : <Text style={s.btnText}>Se connecter</Text>
           }
         </TouchableOpacity>
+
+        <View style={s.divider} />
+
+        <TouchableOpacity onPress={() => router.push('/register')} activeOpacity={0.7}>
+          <Text style={s.registerText}>
+            Pas encore de compte ?{' '}
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>Créer un compte</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   )
@@ -165,5 +174,15 @@ const s = StyleSheet.create({
     color:      colors.background,
     fontSize:   fontSize.md,
     fontWeight: '700',
+  },
+  divider: {
+    height:          1,
+    backgroundColor: colors.border,
+    marginVertical:  spacing.md,
+  },
+  registerText: {
+    color:     colors.textMuted,
+    fontSize:  fontSize.sm,
+    textAlign: 'center',
   },
 })
