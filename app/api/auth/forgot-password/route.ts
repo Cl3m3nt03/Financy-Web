@@ -29,8 +29,18 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
-    await sendPasswordResetEmail(user.email, user.name ?? undefined, `${baseUrl}/reset-password?token=${token}`)
+    const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? vercelUrl ?? process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+
+    const sent = await sendPasswordResetEmail(
+      user.email,
+      user.name ?? undefined,
+      `${baseUrl}/reset-password?token=${token}`
+    )
+
+    if (!sent) {
+      console.error('[forgot-password] Email non envoyé pour', user.email, '— RESEND_API_KEY configuré ?', !!process.env.RESEND_API_KEY)
+    }
   }
 
   return NextResponse.json({ ok: true })
