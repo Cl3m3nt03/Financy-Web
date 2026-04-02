@@ -6,8 +6,8 @@ import { z } from 'zod'
 const schema = z.object({
   label:      z.string().min(1).max(100),
   amount:     z.number().min(0),
-  category:   z.enum(['needs', 'wants', 'savings']),
-  dayOfMonth: z.number().min(1).max(31).optional(),
+  category:   z.enum(['needs', 'wants', 'savings', 'investment']),
+  dayOfMonth: z.number().min(1).max(31).nullable().optional(),
   recurring:  z.boolean().default(true),
 })
 

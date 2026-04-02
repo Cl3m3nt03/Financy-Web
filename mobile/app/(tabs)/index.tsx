@@ -133,7 +133,7 @@ export default function DashboardScreen() {
             <Milestones totalWealth={total} />
             <WealthProjection
               currentWealth={total}
-              monthlyContrib={budgetData?.items?.filter(i => i.category === 'savings').reduce((s, i) => s + i.amount, 0) ?? 0}
+              monthlyContrib={budgetData?.items?.filter(i => i.category === 'investment').reduce((s, i) => s + i.amount, 0) ?? 0}
             />
             {budgetData && budgetData.income ? (
               <WealthFlow

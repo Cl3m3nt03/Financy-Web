@@ -3,6 +3,8 @@ import { getStockPrice, getCryptoPrice, getCoinId } from '@/services/prices'
 import { MOCK_PRICES } from '@/services/mock-data'
 import { PriceData } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 const CRYPTO_SYMBOLS = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'ADA', 'XRP', 'MATIC', 'DOT', 'AVAX', 'LINK'])
 
 export async function GET(req: NextRequest) {

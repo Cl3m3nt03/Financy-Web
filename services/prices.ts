@@ -4,31 +4,36 @@ import { MOCK_PRICES } from './mock-data'
 const COINGECKO_KEY = process.env.COINGECKO_API_KEY
 
 // ── Stocks & ETFs via Yahoo Finance (gratuit, sans limite) ───────────────────
+async function fetchYahoo(symbol: string, host: string): Promise<PriceData | null> {
+  const res = await fetch(
+    `https://${host}/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`,
+    {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible)',
+        'Accept': 'application/json',
+      },
+      cache: 'no-store',
+    }
+  )
+  if (!res.ok) return null
+  const data = await res.json()
+  const meta = data?.chart?.result?.[0]?.meta
+  if (!meta?.regularMarketPrice) return null
+
+  const price: number = meta.regularMarketPrice
+  const prevClose: number = meta.chartPreviousClose ?? meta.previousClose ?? price
+  const change = price - prevClose
+  const changePercent = prevClose ? (change / prevClose) * 100 : 0
+
+  return { symbol, price, change24h: change, changePercent24h: changePercent, changePct24h: changePercent }
+}
+
 export async function getStockPrice(symbol: string): Promise<PriceData | null> {
   try {
-    const res = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`,
-      {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible)',
-          'Accept': 'application/json',
-        },
-        next: { revalidate: 60 },
-      }
-    )
-
-    if (!res.ok) return MOCK_PRICES.find(p => p.symbol === symbol) ?? null
-
-    const data = await res.json()
-    const meta = data?.chart?.result?.[0]?.meta
-    if (!meta?.regularMarketPrice) return null
-
-    const price: number = meta.regularMarketPrice
-    const prevClose: number = meta.chartPreviousClose ?? meta.previousClose ?? price
-    const change = price - prevClose
-    const changePercent = prevClose ? (change / prevClose) * 100 : 0
-
-    return { symbol, price, change24h: change, changePercent24h: changePercent }
+    // Try query1 first, then query2 as fallback (query2 often works better for European ETFs)
+    const result = await fetchYahoo(symbol, 'query1.finance.yahoo.com')
+      ?? await fetchYahoo(symbol, 'query2.finance.yahoo.com')
+    return result ?? MOCK_PRICES.find(p => p.symbol === symbol) ?? null
   } catch {
     return MOCK_PRICES.find(p => p.symbol === symbol) ?? null
   }
@@ -42,7 +47,7 @@ export async function getCryptoPrice(coinId: string): Promise<PriceData | null> 
 
     const res = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=eur&include_24hr_change=true`,
-      { headers, next: { revalidate: 60 } }
+      { headers, cache: 'no-store' }
     )
     const data = await res.json()
     const coinData = data[coinId]
@@ -66,6 +71,7 @@ export async function getCryptoPrice(coinId: string): Promise<PriceData | null> 
       price,
       change24h: change,
       changePercent24h: changePercent,
+      changePct24h: changePercent,
     }
   } catch {
     return MOCK_PRICES.find(p => p.symbol === coinId.toUpperCase()) ?? null

@@ -10,7 +10,7 @@ import { Plus, Trash2, Wallet, ShoppingCart, PiggyBank, TrendingUp, AlertCircle,
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Category = 'needs' | 'wants' | 'savings'
+type Category = 'needs' | 'wants' | 'savings' | 'investment'
 
 interface BudgetItem {
   id:         string
@@ -31,12 +31,13 @@ interface BudgetData {
 const CATEGORY_CONFIG: Record<Category, {
   label: string; color: string; icon: React.ElementType; bg: string; target: number
 }> = {
-  needs:   { label: 'Besoins',  color: '#C9A84C', icon: Wallet,       bg: 'bg-accent/10',      target: 50 },
-  wants:   { label: 'Envies',   color: '#8B5CF6', icon: ShoppingCart, bg: 'bg-purple-500/10',  target: 30 },
-  savings: { label: 'Epargne',  color: '#10B981', icon: PiggyBank,    bg: 'bg-emerald-500/10', target: 20 },
+  needs:      { label: 'Besoins',        color: '#C9A84C', icon: Wallet,       bg: 'bg-accent/10',      target: 50 },
+  wants:      { label: 'Envies',         color: '#8B5CF6', icon: ShoppingCart, bg: 'bg-purple-500/10',  target: 30 },
+  savings:    { label: 'Epargne',        color: '#10B981', icon: PiggyBank,    bg: 'bg-emerald-500/10', target: 10 },
+  investment: { label: 'Investissement', color: '#3B82F6', icon: TrendingUp,   bg: 'bg-blue-500/10',    target: 10 },
 }
 
-const CATEGORIES: Category[] = ['needs', 'wants', 'savings']
+const CATEGORIES: Category[] = ['needs', 'wants', 'savings', 'investment']
 
 const DEFAULT_ITEMS: Omit<BudgetItem, 'id'>[] = [
   { label: 'Loyer / Crédit immo',    amount: 900, category: 'needs',   dayOfMonth: 1,    recurring: true },
@@ -52,36 +53,38 @@ const DEFAULT_ITEMS: Omit<BudgetItem, 'id'>[] = [
 // ─── Sankey helpers ───────────────────────────────────────────────────────────
 
 const CAT_COLORS: Record<Category, string> = {
-  needs:   '#C9A84C',
-  wants:   '#8B5CF6',
-  savings: '#10B981',
+  needs:      '#C9A84C',
+  wants:      '#8B5CF6',
+  savings:    '#10B981',
+  investment: '#3B82F6',
 }
 
 function buildBudgetSankey(items: BudgetItem[], income: number) {
   const INCOME = 0
-  const CAT_IDX: Record<Category, number> = { needs: 1, wants: 2, savings: 3 }
+  const CAT_IDX: Record<Category, number> = { needs: 1, wants: 2, savings: 3, investment: 4 }
   const remaining = income - items.reduce((s, i) => s + i.amount, 0)
   const hasRemaining = remaining > 0
 
   const nodes: { name: string; color: string }[] = [
-    { name: 'Revenus',  color: '#C9A84C' },
-    { name: 'Besoins',  color: CAT_COLORS.needs   },
-    { name: 'Envies',   color: CAT_COLORS.wants   },
-    { name: 'Épargne',  color: CAT_COLORS.savings  },
+    { name: 'Revenus',        color: '#C9A84C' },
+    { name: 'Besoins',        color: CAT_COLORS.needs      },
+    { name: 'Envies',         color: CAT_COLORS.wants      },
+    { name: 'Épargne',        color: CAT_COLORS.savings    },
+    { name: 'Investissement', color: CAT_COLORS.investment },
     ...(hasRemaining ? [{ name: 'Non alloué', color: '#3F3F46' }] : []),
     ...items.map(i => ({ name: i.label, color: CAT_COLORS[i.category] })),
   ]
 
-  const ITEM_START = hasRemaining ? 5 : 4
+  const ITEM_START = hasRemaining ? 6 : 5
 
   const links = [
     // Revenus → catégories
-    ...(['needs', 'wants', 'savings'] as Category[]).map(cat => {
+    ...(['needs', 'wants', 'savings', 'investment'] as Category[]).map(cat => {
       const total = items.filter(i => i.category === cat).reduce((s, i) => s + i.amount, 0)
       return total > 0 ? { source: INCOME, target: CAT_IDX[cat], value: total } : null
     }).filter(Boolean) as { source: number; target: number; value: number }[],
     // Revenus → non alloué
-    ...(hasRemaining ? [{ source: INCOME, target: 4, value: remaining }] : []),
+    ...(hasRemaining ? [{ source: INCOME, target: 5, value: remaining }] : []),
     // Catégories → postes
     ...items.map((item, idx) => ({
       source: CAT_IDX[item.category],
@@ -248,18 +251,19 @@ export default function BudgetPage() {
 
   // ── Calculations ──────────────────────────────────────────────────────────
   const totals = useMemo(() => {
-    const t: Record<Category, number> = { needs: 0, wants: 0, savings: 0 }
+    const t: Record<Category, number> = { needs: 0, wants: 0, savings: 0, investment: 0 }
     for (const item of items) t[item.category] += item.amount
     return t
   }, [items])
 
-  const totalExpenses = totals.needs + totals.wants + totals.savings
+  const totalExpenses = totals.needs + totals.wants + totals.savings + totals.investment
   const remaining     = income - totalExpenses
-  const savingsRate   = income > 0 ? (totals.savings / income) * 100 : 0
+  const savingsRate   = income > 0 ? ((totals.savings + totals.investment) / income) * 100 : 0
   const pcts: Record<Category, number> = {
-    needs:   income > 0 ? (totals.needs   / income) * 100 : 0,
-    wants:   income > 0 ? (totals.wants   / income) * 100 : 0,
-    savings: income > 0 ? (totals.savings / income) * 100 : 0,
+    needs:      income > 0 ? (totals.needs      / income) * 100 : 0,
+    wants:      income > 0 ? (totals.wants      / income) * 100 : 0,
+    savings:    income > 0 ? (totals.savings    / income) * 100 : 0,
+    investment: income > 0 ? (totals.investment / income) * 100 : 0,
   }
 
   const pieData = [
@@ -308,8 +312,8 @@ export default function BudgetPage() {
   const alertCount = income > 0 ? CATEGORIES.reduce((n, cat) => {
     const cfg  = CATEGORY_CONFIG[cat]
     const diff = pcts[cat] - cfg.target
-    if (cat === 'savings' && pcts[cat] < cfg.target - 5) return n + 1
-    if (cat !== 'savings' && diff > 0) return n + 1
+    if ((cat === 'savings' || cat === 'investment') && pcts[cat] < cfg.target - 5) return n + 1
+    if (cat !== 'savings' && cat !== 'investment' && diff > 0) return n + 1
     return n
   }, 0) : 0
 
@@ -324,7 +328,7 @@ export default function BudgetPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header title="Budget" subtitle="Regle des 50/30/20 et flux mensuel" alertCount={alertCount} />
+      <Header title="Budget" subtitle="Regle des 50/30/10/10 et flux mensuel" alertCount={alertCount} />
 
       <div className="flex-1 p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl w-full">
 
@@ -363,11 +367,11 @@ export default function BudgetPage() {
           for (const cat of CATEGORIES) {
             const cfg = CATEGORY_CONFIG[cat]
             const diff = pcts[cat] - cfg.target
-            if (cat === 'savings' && pcts[cat] < cfg.target - 5)
-              alerts.push({ cat, msg: `Épargne à ${pcts[cat].toFixed(0)}% — objectif ${cfg.target}%`, severity: 'warn' })
-            else if (cat !== 'savings' && diff > 10)
+            if ((cat === 'savings' || cat === 'investment') && pcts[cat] < cfg.target - 5)
+              alerts.push({ cat, msg: `${cfg.label} à ${pcts[cat].toFixed(0)}% — objectif ${cfg.target}%`, severity: 'warn' })
+            else if (cat !== 'savings' && cat !== 'investment' && diff > 10)
               alerts.push({ cat, msg: `${cfg.label} à ${pcts[cat].toFixed(0)}% — dépasse l'objectif de ${diff.toFixed(0)}pts`, severity: 'error' })
-            else if (cat !== 'savings' && diff > 0)
+            else if (cat !== 'savings' && cat !== 'investment' && diff > 0)
               alerts.push({ cat, msg: `${cfg.label} à ${pcts[cat].toFixed(0)}% — légèrement au-dessus de l'objectif`, severity: 'warn' })
           }
           if (alerts.length === 0) return null
@@ -479,7 +483,7 @@ export default function BudgetPage() {
 
               {/* 50/30/20 targets */}
               <Card>
-                <CardHeader><CardTitle className="text-base">Regle des 50/30/20</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base">Regle des 50/30/10/10</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   {CATEGORIES.map(cat => {
                     const cfg    = CATEGORY_CONFIG[cat]

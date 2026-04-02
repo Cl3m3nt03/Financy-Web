@@ -77,6 +77,7 @@ export interface PriceData {
   price: number
   change24h: number
   changePercent24h: number
+  changePct24h?: number
 }
 
 export interface PortfolioStats {

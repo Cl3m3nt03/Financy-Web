@@ -7,7 +7,7 @@ import { formatCurrency } from '@/lib/api'
 interface BudgetItem {
   label:    string
   amount:   number
-  category: 'needs' | 'wants' | 'savings'
+  category: 'needs' | 'wants' | 'savings' | 'investment'
 }
 
 interface Props {
@@ -17,17 +17,18 @@ interface Props {
 }
 
 const CAT = {
-  needs:   { label: 'Besoins',  color: colors.accent,  icon: 'home-outline'             as const },
-  wants:   { label: 'Envies',   color: colors.purple,  icon: 'bag-outline'              as const },
-  savings: { label: 'Épargne',  color: colors.success, icon: 'shield-checkmark-outline' as const },
+  needs:      { label: 'Besoins',        color: colors.accent,  icon: 'home-outline'             as const },
+  wants:      { label: 'Envies',         color: colors.purple,  icon: 'bag-outline'              as const },
+  savings:    { label: 'Épargne',        color: colors.success, icon: 'shield-checkmark-outline' as const },
+  investment: { label: 'Investissement', color: '#3B82F6',      icon: 'trending-up-outline'      as const },
 }
 
 export function WealthFlow({ income, items, totalWealth }: Props) {
   if (!income || income === 0) return null
 
-  const totals = { needs: 0, wants: 0, savings: 0 } as Record<string, number>
+  const totals = { needs: 0, wants: 0, savings: 0, investment: 0 } as Record<string, number>
   for (const item of items) totals[item.category] = (totals[item.category] ?? 0) + item.amount
-  const remaining = income - totals.needs - totals.wants - totals.savings
+  const remaining = income - totals.needs - totals.wants - totals.savings - totals.investment
 
   return (
     <View style={s.card}>
@@ -110,8 +111,8 @@ const s = StyleSheet.create({
   arrowRow: { alignItems: 'center', paddingVertical: 4 },
   arrowLine: { width: 1, height: 10, backgroundColor: colors.border },
 
-  flowGrid: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  flowBox:  { flex: 1, alignItems: 'center', backgroundColor: colors.surface2, borderRadius: radius.md, padding: 10, borderWidth: 1, gap: 4 },
+  flowGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  flowBox:  { width: '47%' as any, alignItems: 'center', backgroundColor: colors.surface2, borderRadius: radius.md, padding: 10, borderWidth: 1, gap: 4 },
   flowIcon: { width: 28, height: 28, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   flowLabel:{ fontSize: fontSize.xs, fontWeight: '600' },
   flowAmt:  { color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: '600', letterSpacing: -0.3 },

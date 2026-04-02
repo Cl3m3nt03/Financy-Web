@@ -13,7 +13,7 @@ interface BudgetItem {
   id:         string
   label:      string
   amount:     number
-  category:   'needs' | 'wants' | 'savings'
+  category:   'needs' | 'wants' | 'savings' | 'investment'
   dayOfMonth: number | null
 }
 interface BudgetData {
@@ -24,9 +24,10 @@ interface BudgetData {
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
 
 const CAT_CFG: Record<string, { label: string; color: string; icon: IoniconsName; target: number }> = {
-  needs:   { label: 'Besoins',  color: colors.accent,  icon: 'home-outline',            target: 50 },
-  wants:   { label: 'Envies',   color: colors.purple,  icon: 'bag-outline',             target: 30 },
-  savings: { label: 'Épargne',  color: colors.success, icon: 'shield-checkmark-outline', target: 20 },
+  needs:      { label: 'Besoins',        color: colors.accent,  icon: 'home-outline',             target: 50 },
+  wants:      { label: 'Envies',         color: colors.purple,  icon: 'bag-outline',              target: 30 },
+  savings:    { label: 'Épargne',        color: colors.success, icon: 'shield-checkmark-outline',  target: 10 },
+  investment: { label: 'Investissement', color: '#3B82F6',      icon: 'trending-up-outline',       target: 10 },
 }
 
 const EMPTY_FORM = { label: '', amount: '', category: 'needs' as BudgetItem['category'], dayOfMonth: '' }
@@ -77,11 +78,13 @@ export default function BudgetScreen() {
   const createMut = useMutation({
     mutationFn: (body: object) => apiFetch('/api/budget/items', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ['budget'] }); closeModal() },
+    onError:    (e: any) => Alert.alert('Erreur', e?.message ?? 'Impossible d\'ajouter le poste'),
   })
   const updateMut = useMutation({
     mutationFn: ({ id, body }: { id: string; body: object }) =>
       apiFetch(`/api/budget/items/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['budget'] }); closeModal() },
+    onError:   (e: any) => Alert.alert('Erreur', e?.message ?? 'Impossible de modifier le poste'),
   })
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiFetch(`/api/budget/items/${id}`, { method: 'DELETE' }),
@@ -90,7 +93,8 @@ export default function BudgetScreen() {
 
   const handleSaveItem = () => {
     const amount = parseFloat(form.amount.replace(',', '.'))
-    if (!form.label.trim() || isNaN(amount) || amount <= 0) return
+    if (!form.label.trim()) { Alert.alert('Champ manquant', 'Entrez un libellé'); return }
+    if (isNaN(amount) || amount <= 0) { Alert.alert('Montant invalide', 'Entrez un montant supérieur à 0'); return }
     const body = {
       label:      form.label.trim(),
       amount,
@@ -111,11 +115,11 @@ export default function BudgetScreen() {
   // ── Computed ──────────────────────────────────────────────────────────
   const income        = data?.income ?? 0
   const items         = data?.items  ?? []
-  const totals        = { needs: 0, wants: 0, savings: 0 } as Record<string, number>
+  const totals        = { needs: 0, wants: 0, savings: 0, investment: 0 } as Record<string, number>
   for (const item of items) totals[item.category] = (totals[item.category] ?? 0) + item.amount
-  const totalExpenses = totals.needs + totals.wants + totals.savings
+  const totalExpenses = totals.needs + totals.wants + totals.savings + totals.investment
   const remaining     = income - totalExpenses
-  const savingsRate   = income > 0 ? (totals.savings / income) * 100 : 0
+  const savingsRate   = income > 0 ? ((totals.savings + totals.investment) / income) * 100 : 0
 
   // ── Cashflow : items triés par jour du mois ──────────────────────────
   const cashflowItems = [...items].sort((a, b) => (a.dayOfMonth ?? 99) - (b.dayOfMonth ?? 99))
@@ -170,7 +174,7 @@ export default function BudgetScreen() {
               </View>
               {/* Barre visuelle */}
               <View style={s.allocBar}>
-                {(['needs', 'wants', 'savings'] as const).map(cat => {
+                {(['needs', 'wants', 'savings', 'investment'] as const).map(cat => {
                   const pct = income > 0 ? (totals[cat] / income) * 100 : 0
                   return <View key={cat} style={{ flex: Math.max(pct, 1), backgroundColor: CAT_CFG[cat].color, height: 6 }} />
                 })}
@@ -280,13 +284,13 @@ export default function BudgetScreen() {
             </View>
             {/* Barre 50/30/20 */}
             <View style={s.allocBar}>
-              {(['needs', 'wants', 'savings'] as const).map(cat => {
+              {(['needs', 'wants', 'savings', 'investment'] as const).map(cat => {
                 const pct = income > 0 ? (totals[cat] / income) * 100 : 0
                 return <View key={cat} style={{ flex: Math.max(pct, 2), backgroundColor: CAT_CFG[cat].color, height: 4 }} />
               })}
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-              {(['needs', 'wants', 'savings'] as const).map(cat => {
+              {(['needs', 'wants', 'savings', 'investment'] as const).map(cat => {
                 const pct = income > 0 ? Math.round((totals[cat] / income) * 100) : 0
                 return (
                   <View key={cat} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -300,7 +304,7 @@ export default function BudgetScreen() {
         )}
 
         {/* ── Cards par catégorie ──────────────────────────────────────── */}
-        {data && (['needs', 'wants', 'savings'] as const).map(cat => {
+        {data && (['needs', 'wants', 'savings', 'investment'] as const).map(cat => {
           const cfg    = CAT_CFG[cat]
           const actual = totals[cat] ?? 0
           const target = (income * cfg.target) / 100
@@ -393,21 +397,26 @@ export default function BudgetScreen() {
 
       {/* ── Modal ajout / édition ────────────────────────────────────── */}
       <Modal visible={modal} animationType="slide" transparent onRequestClose={closeModal}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
           <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={closeModal} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ justifyContent: 'flex-end', flex: 1 }}
+          >
           <View style={s.sheet}>
             <View style={s.sheetHandle} />
             <Text style={s.sheetTitle}>{editing ? 'Modifier le poste' : 'Nouveau poste'}</Text>
 
-            {/* Catégorie */}
+            {/* Catégorie — grille 2×2 */}
             <Text style={s.fieldLabel}>Catégorie</Text>
-            <View style={s.segmented}>
-              {(['needs', 'wants', 'savings'] as const).map(cat => (
+            <View style={s.segGrid}>
+              {(['needs', 'wants', 'savings', 'investment'] as const).map(cat => (
                 <TouchableOpacity
                   key={cat}
                   style={[s.seg, form.category === cat && { backgroundColor: CAT_CFG[cat].color + '22', borderColor: CAT_CFG[cat].color }]}
                   onPress={() => setForm(f => ({ ...f, category: cat }))}
                 >
+                  <Ionicons name={CAT_CFG[cat].icon} size={14} color={form.category === cat ? CAT_CFG[cat].color : colors.textMuted} />
                   <Text style={[s.segText, form.category === cat && { color: CAT_CFG[cat].color, fontWeight: '600' }]}>
                     {CAT_CFG[cat].label}
                   </Text>
@@ -421,8 +430,9 @@ export default function BudgetScreen() {
               style={s.input}
               value={form.label}
               onChangeText={v => setForm(f => ({ ...f, label: v }))}
-              placeholder="Ex: Loyer, Courses…"
+              placeholder="Ex: PEA, Livret A…"
               placeholderTextColor={colors.textMuted}
+              returnKeyType="next"
             />
 
             {/* Montant */}
@@ -443,8 +453,10 @@ export default function BudgetScreen() {
               value={form.dayOfMonth}
               onChangeText={v => setForm(f => ({ ...f, dayOfMonth: v }))}
               keyboardType="number-pad"
-              placeholder="Ex: 5 (pour le 5 du mois)"
+              placeholder="Ex: 5"
               placeholderTextColor={colors.textMuted}
+              returnKeyType="done"
+              onSubmitEditing={handleSaveItem}
             />
 
             <TouchableOpacity
@@ -458,7 +470,8 @@ export default function BudgetScreen() {
               }
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
     </SafeAreaView>
   )
@@ -527,7 +540,7 @@ const s = StyleSheet.create({
 
   // Modal
   backdrop:   { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
-  sheet:      { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, paddingBottom: 40, gap: spacing.sm },
+  sheet:      { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, paddingBottom: 40, gap: spacing.sm },
   sheetHandle:{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 8 },
   sheetTitle: { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: '700', marginBottom: 4 },
 
@@ -535,7 +548,8 @@ const s = StyleSheet.create({
   input:      { backgroundColor: colors.surface2, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12, color: colors.textPrimary, fontSize: fontSize.md, borderWidth: 1, borderColor: colors.border },
 
   segmented: { flexDirection: 'row', gap: 8 },
-  seg:        { flex: 1, paddingVertical: 8, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.surface2 },
+  segGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  seg:        { width: '47%' as any, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface2 },
   segText:    { color: colors.textSecondary, fontSize: fontSize.sm },
 
   saveBtn:     { borderRadius: radius.lg, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
