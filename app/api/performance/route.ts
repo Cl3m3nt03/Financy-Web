@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/mobile-auth'
 import { prisma } from '@/lib/db'
 
 // Fetch index data from Yahoo Finance
@@ -29,9 +28,9 @@ async function fetchIndexHistory(symbol: string, months = 24): Promise<Array<{ d
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+  const _u = await getUser(req)
+  if (!_u) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = _u.id
 
   const { searchParams } = new URL(req.url)
   const months = parseInt(searchParams.get('months') ?? '24')

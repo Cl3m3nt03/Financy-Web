@@ -1,21 +1,6 @@
 import { Tabs } from 'expo-router'
-import { View, Text } from 'react-native'
-import { colors, fontSize } from '@/constants/theme'
-
-function TabIcon({ focused, label, emoji }: { focused: boolean; label: string; emoji: string }) {
-  return (
-    <View style={{ alignItems: 'center', gap: 2 }}>
-      <Text style={{ fontSize: 20 }}>{emoji}</Text>
-      <Text style={{
-        fontSize:   fontSize.xs,
-        fontWeight: focused ? '600' : '400',
-        color:      focused ? colors.accent : colors.textMuted,
-      }}>
-        {label}
-      </Text>
-    </View>
-  )
-}
+import { Ionicons } from '@expo/vector-icons'
+import { colors } from '@/constants/theme'
 
 export default function TabsLayout() {
   return (
@@ -23,14 +8,14 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor:  colors.surface,
-          borderTopColor:   colors.border,
-          borderTopWidth:   1,
-          height:           72,
-          paddingBottom:    12,
-          paddingTop:       8,
+          backgroundColor: colors.surface,
+          borderTopColor:  colors.border,
+          borderTopWidth:  1,
+          height:          56,
+          paddingBottom:   6,
+          paddingTop:      6,
         },
-        tabBarShowLabel:    false,
+        tabBarShowLabel:         false,
         tabBarActiveTintColor:   colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
       }}
@@ -38,33 +23,53 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} label="Accueil" emoji="🏠" />,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={22} color={focused ? colors.accent : colors.textMuted} />
+          ),
         }}
       />
       <Tabs.Screen
         name="portfolio"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} label="Portfolio" emoji="📈" />,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? 'trending-up' : 'trending-up-outline'} size={22} color={focused ? colors.accent : colors.textMuted} />
+          ),
         }}
       />
       <Tabs.Screen
         name="budget"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} label="Budget" emoji="💰" />,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? 'pie-chart' : 'pie-chart-outline'} size={22} color={focused ? colors.accent : colors.textMuted} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="transactions"
+        name="goals"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} label="Transactions" emoji="🔄" />,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? 'target' : 'target-outline'} size={22} color={focused ? colors.accent : colors.textMuted} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="assistant"
+        name="more"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon focused={focused} label="Assistant" emoji="🤖" />,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name={focused ? 'grid' : 'grid-outline'} size={22} color={focused ? colors.accent : colors.textMuted} />
+          ),
         }}
       />
+
+      {/* ── Hidden Tabs (Fixed bottom bar but no icon) ── */}
+      <Tabs.Screen name="simulator"    options={{ href: null }} />
+      <Tabs.Screen name="assistant"    options={{ href: null }} />
+      <Tabs.Screen name="transactions" options={{ href: null }} />
+      <Tabs.Screen name="profile"      options={{ href: null }} />
+      <Tabs.Screen name="assets"       options={{ href: null }} />
+      <Tabs.Screen name="fiscal"       options={{ href: null }} />
+      <Tabs.Screen name="pokemon"      options={{ href: null }} />
+      <Tabs.Screen name="settings"     options={{ href: null }} />
     </Tabs>
   )
 }

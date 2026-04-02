@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/mobile-auth'
 
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(req: NextRequest) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const userId = (session.user as any).id
   const assets = await prisma.asset.findMany({
-    where: { userId },
+    where: { userId: user.id },
     include: { holdings: true },
     orderBy: { updatedAt: 'desc' },
   })
@@ -18,10 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const userId = (session.user as any).id
   const body = await req.json()
 
   const FINANCIAL = ['STOCK', 'CRYPTO', 'PEA', 'CTO']
@@ -29,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   const asset = await prisma.asset.create({
     data: {
-      userId,
+      userId:      user.id,
       name:        body.name,
       type:        body.type,
       institution: body.institution ?? null,
@@ -40,7 +37,6 @@ export async function POST(req: NextRequest) {
     include: { holdings: true },
   })
 
-  // Create Holding for financial assets when symbol + quantity provided
   if (isFinancial && body.symbol && body.quantity && body.avgBuyPrice) {
     await prisma.holding.create({
       data: {
@@ -54,7 +50,6 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Return with holdings included
   const full = await prisma.asset.findUnique({
     where: { id: asset.id },
     include: { holdings: true },

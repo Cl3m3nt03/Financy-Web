@@ -1,6 +1,7 @@
+import { getUser } from '@/lib/mobile-auth'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+
+
 import { prisma } from '@/lib/db'
 
 // ─── Cards — pokemontcg.io (CardMarket trendPrice → averageSellPrice → TCGPlayer market) ─
@@ -84,11 +85,11 @@ async function discoverSealedPrice(name: string): Promise<{ id: string; price: n
 
 // ─── POST /api/pokemon/price — refresh all item prices ───────────────────────
 export async function POST() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const _mobileUser = await getUser(req as any)
+  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const items = await prisma.pokemonItem.findMany({
-    where: { userId: (session.user as any).id },
+    where: { userId: _mobileUser.id },
   })
 
   let updated = 0
@@ -131,8 +132,8 @@ export async function POST() {
 
 // ─── GET /api/pokemon/price — fetch price for a single item on demand ─────────
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const _mobileUser = await getUser(req as any)
+  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const cardId = searchParams.get('cardId')

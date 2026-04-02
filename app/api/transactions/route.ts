@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/mobile-auth'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -19,9 +18,8 @@ const schema = z.object({
 })
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const type   = searchParams.get('type')
@@ -30,7 +28,7 @@ export async function GET(req: NextRequest) {
 
   const transactions = await prisma.transaction.findMany({
     where: {
-      userId,
+      userId: user.id,
       ...(type   ? { type }   : {}),
       ...(symbol ? { symbol } : {}),
     },
@@ -43,29 +41,34 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const parsed = schema.safeParse(body)
+
+  // Support both {total} and {quantity*price} from mobile
+  const price    = body.price    ?? (body.quantity && body.price ? body.price : 0)
+  const quantity = body.quantity ?? null
+  const total    = body.total    ?? (quantity && price ? quantity * price : price)
+
+  const parsed = schema.safeParse({ ...body, price: price || total })
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { type, symbol, holdingId, quantity, price, fees, currency, date, notes, tags } = parsed.data
+  const { type, symbol, holdingId, fees, currency, date, notes, tags } = parsed.data
 
   const transaction = await prisma.transaction.create({
     data: {
-      userId,
+      userId:    user.id,
       type,
-      symbol:    symbol ?? null,
+      symbol:    symbol    ?? null,
       holdingId: holdingId ?? null,
-      quantity:  quantity ?? null,
-      price,
-      fees,
-      currency,
-      date:  new Date(date),
-      notes: notes ?? null,
-      tags:  tags  ?? null,
+      quantity:  quantity  ?? null,
+      price:     price || total,
+      fees:      fees ?? 0,
+      currency:  currency ?? 'EUR',
+      date:      new Date(date),
+      notes:     notes ?? null,
+      tags:      tags  ?? null,
     },
   })
 

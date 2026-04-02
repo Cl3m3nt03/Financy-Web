@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native'
 import { router } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, radius, spacing } from '@/constants/theme'
 import { API_BASE } from '@/constants/api'
 
@@ -18,14 +19,25 @@ export default function ForgotPasswordScreen() {
     setLoading(true)
     setError('')
     try {
-      await fetch(`${API_BASE}/api/auth/forgot-password`, {
+      console.log('[ForgotPwd] Appel vers:', `${API_BASE}/api/auth/forgot-password`)
+      const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ email: email.trim().toLowerCase() }),
       })
+
+      console.log('[ForgotPwd] Status HTTP:', res.status)
+
+      if (!res.ok) {
+        const body = await res.text()
+        console.error('[ForgotPwd] Body erreur:', body)
+        throw new Error(`Erreur ${res.status}: ${body}`)
+      }
+
       setSent(true)
-    } catch {
-      setError('Impossible de joindre le serveur.')
+    } catch (err: any) {
+      console.error('[ForgotPwd] Erreur:', err.message)
+      setError(err.message || 'Impossible de joindre le serveur.')
     } finally {
       setLoading(false)
     }
@@ -36,10 +48,10 @@ export default function ForgotPasswordScreen() {
       style={s.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Logo */}
+      {/* ── Logo ──────────────────────────────────────────────────────── */}
       <View style={s.logo}>
         <View style={s.logoIcon}>
-          <Text style={s.logoSymbol}>F</Text>
+          <Text style={s.logoLetter}>F</Text>
         </View>
         <Text style={s.title}>Mot de passe oublié</Text>
         <Text style={s.subtitle}>
@@ -49,7 +61,9 @@ export default function ForgotPasswordScreen() {
 
       {sent ? (
         <View style={s.card}>
-          <Text style={{ fontSize: 48, textAlign: 'center', marginBottom: 16 }}>📬</Text>
+          <View style={s.successIconWrap}>
+            <Ionicons name="mail-outline" size={36} color={colors.accent} />
+          </View>
           <Text style={s.successTitle}>Vérifiez votre boîte mail</Text>
           <Text style={s.successText}>
             Si un compte existe pour {email}, vous recevrez un email avec un lien valable 1 heure.{'\n\n'}
@@ -62,18 +76,26 @@ export default function ForgotPasswordScreen() {
       ) : (
         <View style={s.card}>
           <Text style={s.label}>Adresse email</Text>
-          <TextInput
-            style={s.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="votre@email.com"
-            placeholderTextColor={colors.textMuted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          <View style={s.inputWrap}>
+            <Ionicons name="mail-outline" size={16} color={colors.textMuted} style={{ marginRight: 10 }} />
+            <TextInput
+              style={s.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="votre@email.com"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
 
-          {error ? <Text style={s.error}>{error}</Text> : null}
+          {error ? (
+            <View style={s.errorBox}>
+              <Ionicons name="warning-outline" size={14} color={colors.danger} />
+              <Text style={s.errorText}>{error}</Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={[s.btn, (!email.trim() || loading) && { opacity: 0.5 }]}
@@ -88,7 +110,8 @@ export default function ForgotPasswordScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-            <Text style={s.backText}>← Retour à la connexion</Text>
+            <Ionicons name="arrow-back-outline" size={14} color={colors.textMuted} />
+            <Text style={s.backText}>Retour à la connexion</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -101,37 +124,56 @@ const s = StyleSheet.create({
     flex: 1, backgroundColor: colors.background,
     justifyContent: 'center', paddingHorizontal: spacing.xl,
   },
+
   logo: { alignItems: 'center', marginBottom: spacing['2xl'] },
   logoIcon: {
-    width: 56, height: 56, borderRadius: radius.xl,
-    backgroundColor: colors.accent + '20',
-    borderWidth: 1, borderColor: colors.accent + '40',
+    width: 56, height: 56, borderRadius: 16,
+    backgroundColor: colors.accent + '15',
+    borderWidth: 1, borderColor: colors.accent + '30',
     alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md,
   },
-  logoSymbol: { color: colors.accent, fontSize: 28, fontWeight: '700' },
-  title:      { color: colors.textPrimary,   fontSize: fontSize['2xl'], fontWeight: '700' },
-  subtitle:   { color: colors.textMuted,     fontSize: fontSize.sm, marginTop: 6, textAlign: 'center' },
+  logoLetter: { color: colors.accent, fontSize: 24, fontWeight: '800' },
+  title:    { color: colors.textPrimary, fontSize: fontSize['2xl'], fontWeight: '700', letterSpacing: -0.3 },
+  subtitle: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: 6, textAlign: 'center', lineHeight: 18 },
 
   card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.xl, padding: spacing.lg, gap: 12,
+    backgroundColor: colors.surface, borderWidth: 1,
+    borderColor: colors.border, borderRadius: radius.xl,
+    padding: spacing.lg, gap: 12,
   },
-  label:  { color: colors.textSecondary, fontSize: fontSize.sm, fontWeight: '500' },
+
+  label: { color: colors.textSecondary, fontSize: fontSize.sm, fontWeight: '500' },
+
+  inputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.background, borderWidth: 1,
+    borderColor: colors.border, borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+  },
   input: {
-    backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 14,
+    flex: 1, paddingVertical: 14,
     color: colors.textPrimary, fontSize: fontSize.md,
   },
-  error: { color: colors.danger, fontSize: fontSize.xs },
+
+  errorBox: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.danger + '12', borderRadius: radius.md, paddingHorizontal: 12, paddingVertical: 8 },
+  errorText: { color: colors.danger, fontSize: fontSize.xs, flex: 1 },
+
   btn: {
     backgroundColor: colors.accent, borderRadius: radius.md,
     paddingVertical: 16, alignItems: 'center', marginTop: 4,
   },
-  btnText:  { color: colors.background, fontSize: fontSize.md, fontWeight: '700' },
-  backBtn:  { alignItems: 'center', paddingVertical: 8 },
+  btnText: { color: colors.background, fontSize: fontSize.md, fontWeight: '700' },
+
+  backBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
   backText: { color: colors.textMuted, fontSize: fontSize.sm },
 
+  successIconWrap: {
+    width: 72, height: 72, borderRadius: 24,
+    backgroundColor: colors.accent + '12',
+    borderWidth: 1, borderColor: colors.accent + '25',
+    alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'center', marginBottom: 4,
+  },
   successTitle: { color: colors.textPrimary, fontSize: fontSize.lg, fontWeight: '700', textAlign: 'center' },
   successText:  { color: colors.textMuted, fontSize: fontSize.sm, textAlign: 'center', lineHeight: 20 },
 })

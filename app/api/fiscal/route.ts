@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/mobile-auth'
 
 const PFU_RATE        = 0.30   // Prélèvement Forfaitaire Unique
 const SOCIAL_RATE     = 0.172  // Prélèvements sociaux seuls
@@ -11,9 +10,9 @@ const IR_RATE         = 0.128  // IR seul dans PFU
 const PEA_HOLD_YEARS  = 5
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = user.id
 
   const { searchParams } = new URL(req.url)
   const year = parseInt(searchParams.get('year') ?? String(new Date().getFullYear()))

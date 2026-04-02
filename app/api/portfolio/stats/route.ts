@@ -1,15 +1,14 @@
-import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/mobile-auth'
 import { AssetBreakdown, PortfolioStats } from '@/types'
 import { MOCK_PORTFOLIO_STATS } from '@/services/mock-data'
 
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(req: NextRequest) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const userId = (session.user as any).id
+  const userId = user.id
   const assets = await prisma.asset.findMany({ where: { userId } })
 
   if (assets.length === 0) {

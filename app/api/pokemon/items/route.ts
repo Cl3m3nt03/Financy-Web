@@ -1,27 +1,28 @@
+import { getUser } from '@/lib/mobile-auth'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+
+
 import { prisma } from '@/lib/db'
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const _mobileUser = await getUser(req as any)
+  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const items = await prisma.pokemonItem.findMany({
-    where: { userId: (session.user as any).id },
+    where: { userId: _mobileUser.id },
     orderBy: { createdAt: 'desc' },
   })
   return NextResponse.json(items)
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const _mobileUser = await getUser(req as any)
+  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
   const item = await prisma.pokemonItem.create({
     data: {
-      userId: (session.user as any).id,
+      userId: _mobileUser.id,
       itemType: body.itemType,
       name: body.name,
       setName: body.setName ?? null,

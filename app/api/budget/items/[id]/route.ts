@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/mobile-auth'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -12,29 +11,35 @@ const schema = z.object({
   recurring:  z.boolean().optional(),
 })
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+async function update(req: NextRequest, id: string) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const item = await prisma.budgetItem.findUnique({ where: { id: params.id } })
-  if (!item || item.userId !== userId) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const item = await prisma.budgetItem.findUnique({ where: { id } })
+  if (!item || item.userId !== user.id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const updated = await prisma.budgetItem.update({ where: { id: params.id }, data: parsed.data })
+  const updated = await prisma.budgetItem.update({ where: { id }, data: parsed.data })
   return NextResponse.json(updated)
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  return update(req, params.id)
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  return update(req, params.id)
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const item = await prisma.budgetItem.findUnique({ where: { id: params.id } })
-  if (!item || item.userId !== userId) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (!item || item.userId !== user.id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   await prisma.budgetItem.delete({ where: { id: params.id } })
   return NextResponse.json({ success: true })

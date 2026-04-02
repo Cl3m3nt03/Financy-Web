@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getUser } from '@/lib/mobile-auth'
 import { goalSchema } from '@/lib/validations'
 
-export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+export async function GET(req: NextRequest) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const goals = await prisma.goal.findMany({
-    where: { userId },
+    where: { userId: user.id },
     orderBy: { targetDate: 'asc' },
   })
 
@@ -18,9 +16,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = (session.user as any).id
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
   const parsed = goalSchema.safeParse(body)
@@ -31,12 +28,12 @@ export async function POST(req: NextRequest) {
 
   const goal = await prisma.goal.create({
     data: {
-      userId,
-      name: parsed.data.name,
+      userId:      user.id,
+      name:        parsed.data.name,
       targetValue: parsed.data.targetValue,
-      currency: parsed.data.currency,
-      targetDate: parsed.data.targetDate ? new Date(parsed.data.targetDate) : null,
-      notes: parsed.data.notes ?? null,
+      currency:    parsed.data.currency,
+      targetDate:  parsed.data.targetDate ? new Date(parsed.data.targetDate) : null,
+      notes:       parsed.data.notes ?? null,
     },
   })
 

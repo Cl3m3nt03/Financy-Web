@@ -1,6 +1,7 @@
+import { getUser } from '@/lib/mobile-auth'
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+
+
 
 // ─── Cards — pokemontcg.io ────────────────────────────────────────────────────
 // trendPrice = average of recent CardMarket completed sales (Règle Zalu ✓)
@@ -96,8 +97,8 @@ async function searchSealedViaPriceCharting(query: string) {
 }
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const _mobileUser = await getUser(req as any)
+  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const query = searchParams.get('q')?.trim()
