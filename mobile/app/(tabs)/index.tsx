@@ -9,6 +9,8 @@ import { useAuthStore } from '@/lib/store'
 import { HealthScore } from '@/components/HealthScore'
 import { Milestones } from '@/components/Milestones'
 import { WealthChart } from '@/components/WealthChart'
+import { WealthProjection } from '@/components/WealthProjection'
+import { WealthFlow } from '@/components/WealthFlow'
 
 interface DashboardStats {
   // portfolio/stats API fields
@@ -52,11 +54,16 @@ const QUICK_ACTIONS: { label: string; icon: IoniconsName; route: any }[] = [
 ]
 
 export default function DashboardScreen() {
-  const { user, logout } = useAuthStore()
+  const { user } = useAuthStore()
 
   const { data, isLoading, refetch, isRefetching } = useQuery<DashboardStats>({
     queryKey: ['dashboard'],
     queryFn:  () => apiFetch('/api/portfolio/stats'),
+  })
+
+  const { data: budgetData } = useQuery<{ items: { label: string; amount: number; category: 'needs'|'wants'|'savings' }[]; income: number | null }>({
+    queryKey: ['budget'],
+    queryFn:  () => apiFetch('/api/budget/items'),
   })
 
   // API returns totalValue (portfolio/stats) — support both field names
@@ -124,6 +131,17 @@ export default function DashboardScreen() {
           <View style={{ gap: spacing.md }}>
             <HealthScore breakdown={data.breakdown} totalValue={total} />
             <Milestones totalWealth={total} />
+            <WealthProjection
+              currentWealth={total}
+              monthlyContrib={budgetData?.items?.filter(i => i.category === 'savings').reduce((s, i) => s + i.amount, 0) ?? 0}
+            />
+            {budgetData && budgetData.income ? (
+              <WealthFlow
+                income={budgetData.income}
+                items={budgetData.items ?? []}
+                totalWealth={total}
+              />
+            ) : null}
           </View>
         )}
 

@@ -54,7 +54,11 @@ const POPULAR_STOCKS: SearchResult[] = [
   { symbol: 'WLN.PA', name: 'Worldline',            exchange: 'Euronext Paris' },
   // ETF World / PEA éligibles
   { symbol: 'IWPE.PA', name: 'iShares MSCI World Swap PEA UCITS ETF EUR (Acc)', exchange: 'Euronext Paris', isin: 'IE0002XZSHO1' },
-  { symbol: 'IWDA.AS', name: 'iShares Core MSCI World UCITS ETF',               exchange: 'Euronext Amsterdam', isin: 'IE00B4L5Y983' },
+  { symbol: 'IWDA.AS', name: 'iShares Core MSCI World UCITS ETF USD (Acc)',     exchange: 'Euronext Amsterdam', isin: 'IE00B4L5Y983' },
+  { symbol: 'SWRD.PA', name: 'SPDR MSCI World UCITS ETF',                       exchange: 'Euronext Paris', isin: 'IE00BFY0GT14' },
+  { symbol: 'MWRD.PA', name: 'iShares MSCI World UCITS ETF EUR Hedged (Acc)',   exchange: 'Euronext Paris', isin: 'IE00B441G979' },
+  { symbol: 'LCWD.PA', name: 'Lyxor Core MSCI World UCITS ETF (DR)',            exchange: 'Euronext Paris', isin: 'LU1781541179' },
+  { symbol: 'BNPE.PA', name: 'BNP Paribas Easy MSCI World SRI PAB UCITS ETF',  exchange: 'Euronext Paris', isin: 'LU1291109621' },
   { symbol: 'CW8.PA',  name: 'Amundi MSCI World UCITS ETF (C)',                  exchange: 'Euronext Paris', isin: 'LU1681043599' },
   { symbol: 'EWLD.PA', name: 'Lyxor MSCI World UCITS ETF (Acc)',                 exchange: 'Euronext Paris', isin: 'FR0011869353' },
   { symbol: 'WPEA.PA', name: 'Amundi MSCI World SRI PAB UCITS ETF PEA (C)',      exchange: 'Euronext Paris', isin: 'LU1792117779' },

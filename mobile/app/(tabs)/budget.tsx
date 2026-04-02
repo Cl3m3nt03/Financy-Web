@@ -31,8 +31,11 @@ const CAT_CFG: Record<string, { label: string; color: string; icon: IoniconsName
 
 const EMPTY_FORM = { label: '', amount: '', category: 'needs' as BudgetItem['category'], dayOfMonth: '' }
 
+type Tab = 'repartition' | 'cashflow'
+
 export default function BudgetScreen() {
   const qc = useQueryClient()
+  const [tab, setTab] = useState<Tab>('repartition')
 
   const { data, isLoading, refetch, isRefetching } = useQuery<BudgetData>({
     queryKey: ['budget'],
@@ -114,6 +117,14 @@ export default function BudgetScreen() {
   const remaining     = income - totalExpenses
   const savingsRate   = income > 0 ? (totals.savings / income) * 100 : 0
 
+  // ── Cashflow : items triés par jour du mois ──────────────────────────
+  const cashflowItems = [...items].sort((a, b) => (a.dayOfMonth ?? 99) - (b.dayOfMonth ?? 99))
+  let running = income
+  const cashflowRows = cashflowItems.map(item => {
+    running -= item.amount
+    return { ...item, runningBalance: running }
+  })
+
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView
@@ -126,8 +137,102 @@ export default function BudgetScreen() {
           <Text style={s.pageTitle}>Budget</Text>
         </View>
 
+        {/* ── Onglets ─────────────────────────────────────────────────── */}
+        <View style={s.tabs}>
+          <TouchableOpacity style={[s.tabBtn, tab === 'repartition' && s.tabActive]} onPress={() => setTab('repartition')}>
+            <Text style={[s.tabText, tab === 'repartition' && s.tabTextActive]}>Répartition</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.tabBtn, tab === 'cashflow' && s.tabActive]} onPress={() => setTab('cashflow')}>
+            <Text style={[s.tabText, tab === 'cashflow' && s.tabTextActive]}>Flux mensuel</Text>
+          </TouchableOpacity>
+        </View>
+
         {isLoading && <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />}
 
+        {/* ══════════════════════════════════════════════════════════════
+            VUE FLUX MENSUEL
+        ══════════════════════════════════════════════════════════════ */}
+        {tab === 'cashflow' && data && (
+          <>
+            {/* Carte récap */}
+            <View style={s.card}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <View>
+                  <Text style={s.cardLabel}>Revenu mensuel</Text>
+                  <Text style={s.incomeValue}>{formatCurrency(income)}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={s.cardLabel}>Solde fin de mois</Text>
+                  <Text style={[s.incomeValue, { color: remaining >= 0 ? colors.success : colors.danger }]}>
+                    {formatCurrency(remaining)}
+                  </Text>
+                </View>
+              </View>
+              {/* Barre visuelle */}
+              <View style={s.allocBar}>
+                {(['needs', 'wants', 'savings'] as const).map(cat => {
+                  const pct = income > 0 ? (totals[cat] / income) * 100 : 0
+                  return <View key={cat} style={{ flex: Math.max(pct, 1), backgroundColor: CAT_CFG[cat].color, height: 6 }} />
+                })}
+                {remaining > 0 && <View style={{ flex: (remaining / income) * 100, backgroundColor: colors.surface2, height: 6 }} />}
+              </View>
+            </View>
+
+            {/* Timeline cashflow */}
+            {cashflowItems.length === 0 ? (
+              <View style={[s.card, { alignItems: 'center', paddingVertical: 32 }]}>
+                <Ionicons name="calendar-outline" size={36} color={colors.textMuted} style={{ marginBottom: 10 }} />
+                <Text style={{ color: colors.textSecondary, fontSize: fontSize.sm, fontWeight: '600' }}>Aucun poste budgétaire</Text>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.xs, marginTop: 4 }}>Allez sur "Répartition" pour en ajouter.</Text>
+              </View>
+            ) : (
+              <View style={s.card}>
+                {/* Ligne départ */}
+                <View style={s.cashflowRow}>
+                  <View style={[s.cfDay, { backgroundColor: colors.success + '20' }]}>
+                    <Text style={[s.cfDayText, { color: colors.success }]}>1</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.cfLabel}>Revenu reçu</Text>
+                  </View>
+                  <Text style={[s.cfAmount, { color: colors.success }]}>+{formatCurrency(income)}</Text>
+                  <Text style={[s.cfBalance, { color: colors.success }]}>{formatCurrency(income)}</Text>
+                </View>
+                <View style={s.cashflowSep} />
+
+                {cashflowRows.map((item, idx) => {
+                  const cfg = CAT_CFG[item.category]
+                  return (
+                    <View key={item.id}>
+                      {idx > 0 && <View style={s.cashflowSep} />}
+                      <View style={s.cashflowRow}>
+                        <View style={[s.cfDay, { backgroundColor: cfg.color + '18' }]}>
+                          <Text style={[s.cfDayText, { color: cfg.color }]}>
+                            {item.dayOfMonth ?? '—'}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.cfLabel}>{item.label}</Text>
+                          <Text style={[s.cfCat, { color: cfg.color }]}>{cfg.label}</Text>
+                        </View>
+                        <Text style={[s.cfAmount, { color: colors.danger }]}>−{formatCurrency(item.amount)}</Text>
+                        <Text style={[s.cfBalance, { color: item.runningBalance >= 0 ? colors.textSecondary : colors.danger }]}>
+                          {formatCurrency(item.runningBalance)}
+                        </Text>
+                      </View>
+                    </View>
+                  )
+                })}
+              </View>
+            )}
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════
+            VUE RÉPARTITION 50/30/20
+        ══════════════════════════════════════════════════════════════ */}
+        {tab === 'repartition' && (
+          <>
         {/* ── Revenu mensuel ──────────────────────────────────────────── */}
         {data && (
           <View style={s.card}>
@@ -282,6 +387,8 @@ export default function BudgetScreen() {
             </View>
           </View>
         )}
+          </>
+        )}
       </ScrollView>
 
       {/* ── Modal ajout / édition ────────────────────────────────────── */}
@@ -363,6 +470,23 @@ const s = StyleSheet.create({
 
   pageHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   pageTitle:  { color: colors.textPrimary, fontSize: fontSize['2xl'], fontWeight: '700', letterSpacing: -0.5 },
+
+  // Tabs
+  tabs:         { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: radius.lg, padding: 3, marginBottom: 4 },
+  tabBtn:       { flex: 1, paddingVertical: 8, borderRadius: radius.md, alignItems: 'center' },
+  tabActive:    { backgroundColor: colors.surface, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  tabText:      { color: colors.textMuted, fontSize: fontSize.sm, fontWeight: '500' },
+  tabTextActive:{ color: colors.textPrimary, fontWeight: '700' },
+
+  // Cashflow
+  cashflowRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: spacing.md },
+  cashflowSep:  { height: 1, backgroundColor: colors.border, marginLeft: spacing.md + 32 + 10 },
+  cfDay:        { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  cfDayText:    { fontSize: fontSize.xs, fontWeight: '700' },
+  cfLabel:      { color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: '500' },
+  cfCat:        { fontSize: fontSize.xs, fontWeight: '500', marginTop: 1 },
+  cfAmount:     { fontSize: fontSize.xs, fontWeight: '600', width: 80, textAlign: 'right' },
+  cfBalance:    { fontSize: fontSize.xs, fontWeight: '600', width: 72, textAlign: 'right' },
 
   card: {
     backgroundColor: colors.surface, borderRadius: radius.xl,
