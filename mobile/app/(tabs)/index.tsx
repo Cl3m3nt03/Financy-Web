@@ -11,6 +11,7 @@ import { Milestones } from '@/components/Milestones'
 import { WealthChart } from '@/components/WealthChart'
 import { WealthProjection } from '@/components/WealthProjection'
 import { WealthFlow } from '@/components/WealthFlow'
+import { PassiveIncome } from '@/components/PassiveIncome'
 
 interface DashboardStats {
   // portfolio/stats API fields
@@ -135,6 +136,7 @@ export default function DashboardScreen() {
               currentWealth={total}
               monthlyContrib={budgetData?.items?.filter(i => i.category === 'investment').reduce((s, i) => s + i.amount, 0) ?? 0}
             />
+            <PassiveIncome />
             {budgetData && budgetData.income ? (
               <WealthFlow
                 income={budgetData.income}

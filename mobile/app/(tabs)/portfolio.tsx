@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, radius, spacing } from '@/constants/theme'
 import { apiFetch, formatCurrency, formatPercent } from '@/lib/api'
-import Svg, { Circle } from 'react-native-svg'
+import Svg, { Circle, G, Path } from 'react-native-svg'
 
 interface Holding {
   id:          string
@@ -33,6 +33,14 @@ interface PriceData {
   price:        number
   change24h:    number
   changePct24h: number
+}
+
+interface DividendTx {
+  id:      string
+  symbol:  string | null
+  price:   number
+  date:    string
+  holding: { symbol: string; name: string } | null
 }
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name']
@@ -118,6 +126,11 @@ export default function PortfolioScreen() {
   const symbols = (assets ?? [])
     .flatMap(a => a.holdings.map(h => h.symbol))
     .filter(Boolean)
+
+  const { data: dividends } = useQuery<DividendTx[]>({
+    queryKey: ['dividends'],
+    queryFn:  () => apiFetch('/api/transactions?type=DIVIDEND&limit=200'),
+  })
 
   const { data: prices, refetch: refetchPrices } = useQuery<PriceData[]>({
     queryKey:        ['prices', symbols.join(',')],
@@ -260,46 +273,180 @@ export default function PortfolioScreen() {
           </>
         )}
 
-        {activeTab === 'sectors' && (
-          <View style={s.card}>
-            <Text style={s.sectionTitle}>Répartition par secteur</Text>
-            <View style={{ gap: 14, marginTop: 20 }}>
-              {Object.entries(TYPE_ICONS).map(([type, cfg]) => {
-                const value = assets?.filter(a => a.type === type).reduce((acc, a) => acc + a.value, 0) ?? 0
-                const totalCurrentValue = assets?.reduce((acc, a) => acc + a.value, 0) ?? 1
-                const pct = (value / totalCurrentValue) * 100
-                if (value === 0) return null
-                return (
-                  <View key={type}>
+        {activeTab === 'sectors' && (() => {
+          const totalVal = assets?.reduce((acc, a) => acc + a.value, 0) ?? 0
+          const slices = Object.entries(TYPE_ICONS).map(([type, cfg]) => ({
+            type, cfg,
+            value: assets?.filter(a => a.type === type).reduce((acc, a) => acc + a.value, 0) ?? 0,
+          })).filter(s => s.value > 0)
+
+          // SVG donut
+          const R = 70, r = 44, cx = 90, cy = 90, size = 180
+          let angle = -Math.PI / 2
+          const paths = slices.map(sl => {
+            const pct   = sl.value / Math.max(totalVal, 1)
+            const sweep = pct * 2 * Math.PI
+            const x1    = cx + R * Math.cos(angle)
+            const y1    = cy + R * Math.sin(angle)
+            angle      += sweep
+            const x2    = cx + R * Math.cos(angle)
+            const y2    = cy + R * Math.sin(angle)
+            const xi1   = cx + r * Math.cos(angle)
+            const yi1   = cy + r * Math.sin(angle)
+            angle      -= sweep
+            const xi2   = cx + r * Math.cos(angle)
+            const yi2   = cy + r * Math.sin(angle)
+            angle      += sweep
+            const large = sweep > Math.PI ? 1 : 0
+            const d     = `M${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${xi1.toFixed(2)},${yi1.toFixed(2)} A${r},${r} 0 ${large},0 ${xi2.toFixed(2)},${yi2.toFixed(2)} Z`
+            return { ...sl, d, pct }
+          })
+
+          const TYPE_LABELS_MAP: Record<string, string> = {
+            STOCK: 'Bourse', CRYPTO: 'Crypto', PEA: 'PEA', CTO: 'CTO',
+            REAL_ESTATE: 'Immobilier', SAVINGS: 'Épargne', BANK_ACCOUNT: 'Compte', OTHER: 'Autre',
+          }
+
+          return (
+            <View style={s.card}>
+              <Text style={s.sectionTitle}>Répartition du patrimoine</Text>
+
+              {/* Donut */}
+              <View style={{ alignItems: 'center', marginVertical: 12 }}>
+                <Svg width={size} height={size}>
+                  <G>
+                    {paths.map((p, i) => (
+                      <Path key={i} d={p.d} fill={p.cfg.color} opacity={0.9} />
+                    ))}
+                    <Circle cx={cx} cy={cy} r={r - 2} fill={colors.surface} />
+                  </G>
+                </Svg>
+                <View style={{ position: 'absolute', top: 0, left: 0, width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: fontSize.md }}>{formatCurrency(totalVal)}</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: fontSize.xs }}>patrimoine</Text>
+                </View>
+              </View>
+
+              {/* Légende */}
+              <View style={{ gap: 10 }}>
+                {paths.map(p => (
+                  <View key={p.type}>
                     <View style={s.breakdownRow}>
-                      <View style={[s.assetIconWrap, { backgroundColor: cfg.color + '15' }]}>
-                        <Ionicons name={cfg.icon} size={12} color={cfg.color} />
+                      <View style={[s.assetIconWrap, { backgroundColor: p.cfg.color + '15' }]}>
+                        <Ionicons name={p.cfg.icon} size={12} color={p.cfg.color} />
                       </View>
-                      <Text style={s.breakdownLabel}>{type}</Text>
-                      <Text style={s.breakdownPct}>{pct.toFixed(1)}%</Text>
-                      <Text style={s.breakdownValue}>{formatCurrency(value)}</Text>
+                      <Text style={s.breakdownLabel}>{TYPE_LABELS_MAP[p.type] ?? p.type}</Text>
+                      <Text style={s.breakdownPct}>{(p.pct * 100).toFixed(1)}%</Text>
+                      <Text style={s.breakdownValue}>{formatCurrency(p.value)}</Text>
                     </View>
                     <View style={s.barBg}>
-                      <View style={[s.barFill, { width: `${pct}%`, backgroundColor: cfg.color }]} />
+                      <View style={[s.barFill, { width: `${p.pct * 100}%`, backgroundColor: p.cfg.color }]} />
                     </View>
                   </View>
-                )
-              })}
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          )
+        })()}
 
-        {activeTab === 'dividends' && (
-          <View style={[s.card, { alignItems: 'center', paddingVertical: 40 }]}>
-            <Ionicons name="pie-chart-outline" size={40} color={colors.textMuted} style={{ marginBottom: 12 }} />
-            <Text style={{ color: colors.textSecondary, fontSize: fontSize.md, fontWeight: '600' }}>
-              Dividendes & Revenus passifs
-            </Text>
-            <Text style={{ color: colors.textMuted, fontSize: fontSize.sm, marginTop: 4, textAlign: 'center' }}>
-              Fonctionnalité en cours de synchronisation avec vos actifs à dividendes.
-            </Text>
-          </View>
-        )}
+        {activeTab === 'dividends' && (() => {
+          const oneYearAgo  = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+          const last12m     = (dividends ?? []).filter(t => new Date(t.date) >= oneYearAgo)
+          const totalAnnual = last12m.reduce((s, t) => s + t.price, 0)
+          const monthlyAvg  = totalAnnual / 12
+          const bySymbol    = last12m.reduce((acc, t) => {
+            const key = t.symbol ?? t.holding?.symbol ?? 'Autre'
+            acc[key]  = (acc[key] ?? 0) + t.price
+            return acc
+          }, {} as Record<string, number>)
+          const bySymbolSorted = Object.entries(bySymbol).sort(([,a],[,b]) => b - a)
+
+          if ((dividends ?? []).length === 0) return (
+            <View style={[s.card, { alignItems: 'center', paddingVertical: 40 }]}>
+              <Ionicons name="cash-outline" size={40} color={colors.textMuted} style={{ marginBottom: 12 }} />
+              <Text style={{ color: colors.textSecondary, fontSize: fontSize.md, fontWeight: '600' }}>Aucun dividende</Text>
+              <Text style={{ color: colors.textMuted, fontSize: fontSize.sm, marginTop: 4, textAlign: 'center' }}>
+                Ajoutez vos encaissements via l'onglet Transactions.
+              </Text>
+            </View>
+          )
+
+          return (
+            <>
+              {/* Hero revenus passifs */}
+              <View style={s.heroCard}>
+                <Text style={s.heroLabel}>Revenus passifs (12 mois)</Text>
+                <Text style={[s.heroValue, { color: colors.success }]}>{formatCurrency(totalAnnual)}</Text>
+                <View style={{ flexDirection: 'row', gap: 24, marginTop: 12 }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ color: colors.textMuted, fontSize: fontSize.xs }}>Mensuel moy.</Text>
+                    <Text style={{ color: colors.success, fontWeight: '700', fontSize: fontSize.md }}>{formatCurrency(monthlyAvg)}</Text>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ color: colors.textMuted, fontSize: fontSize.xs }}>Versements</Text>
+                    <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: fontSize.md }}>{last12m.length}</Text>
+                  </View>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={{ color: colors.textMuted, fontSize: fontSize.xs }}>Quotidien moy.</Text>
+                    <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: fontSize.md }}>{formatCurrency(totalAnnual / 365)}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Par symbole */}
+              {bySymbolSorted.length > 0 && (
+                <View style={s.card}>
+                  <Text style={s.sectionTitle}>Par actif — 12 derniers mois</Text>
+                  <View style={{ gap: 10, marginTop: 14 }}>
+                    {bySymbolSorted.map(([sym, amt]) => {
+                      const pct = totalAnnual > 0 ? (amt / totalAnnual) * 100 : 0
+                      return (
+                        <View key={sym}>
+                          <View style={s.breakdownRow}>
+                            <View style={[s.assetIconWrap, { backgroundColor: colors.success + '15' }]}>
+                              <Ionicons name="cash-outline" size={12} color={colors.success} />
+                            </View>
+                            <Text style={s.breakdownLabel}>{sym}</Text>
+                            <Text style={s.breakdownPct}>{pct.toFixed(1)}%</Text>
+                            <Text style={[s.breakdownValue, { color: colors.success }]}>{formatCurrency(amt)}</Text>
+                          </View>
+                          <View style={s.barBg}>
+                            <View style={[s.barFill, { width: `${pct}%`, backgroundColor: colors.success }]} />
+                          </View>
+                        </View>
+                      )
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {/* Dernières transactions */}
+              <View style={s.card}>
+                <Text style={s.sectionTitle}>Historique</Text>
+                <View style={{ gap: 2, marginTop: 12 }}>
+                  {(dividends ?? []).slice(0, 20).map(t => (
+                    <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                      <View style={[s.assetIconWrap, { backgroundColor: colors.success + '15' }]}>
+                        <Ionicons name="arrow-down-outline" size={12} color={colors.success} />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={{ color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: '500' }}>
+                          {t.symbol ?? t.holding?.symbol ?? 'Dividende'}
+                        </Text>
+                        <Text style={{ color: colors.textMuted, fontSize: fontSize.xs }}>
+                          {new Date(t.date).toLocaleDateString('fr-FR')}
+                        </Text>
+                      </View>
+                      <Text style={{ color: colors.success, fontWeight: '600', fontSize: fontSize.sm }}>
+                        +{formatCurrency(t.price)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </>
+          )
+        })()}
 
         {!isLoading && (assets ?? []).length === 0 && (
           <View style={[s.card, { alignItems: 'center', paddingVertical: 48 }]}>
