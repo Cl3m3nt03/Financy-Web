@@ -11,19 +11,23 @@ import { Milestones } from '@/components/Milestones'
 import { WealthChart } from '@/components/WealthChart'
 
 interface DashboardStats {
-  totalWealth:   number
-  monthlyChange: number
-  monthlyPct:    number
+  // portfolio/stats API fields
+  totalValue?:       number
+  totalWealth?:      number
+  totalPnl?:         number
+  totalPnlPercent?:  number
+  monthlyChange?:    number
+  monthlyPct?:       number
   history: { date: string; value: number }[]
   breakdown: {
-    BANK_ACCOUNT: number
-    SAVINGS:      number
-    REAL_ESTATE:  number
-    STOCK:        number
-    CRYPTO:       number
-    PEA:          number
-    CTO:          number
-    OTHER:        number
+    BANK_ACCOUNT?: number
+    SAVINGS?:      number
+    REAL_ESTATE?:  number
+    STOCK?:        number
+    CRYPTO?:       number
+    PEA?:          number
+    CTO?:          number
+    OTHER?:        number
   }
 }
 
@@ -55,14 +59,19 @@ export default function DashboardScreen() {
     queryFn:  () => apiFetch('/api/portfolio/stats'),
   })
 
-  const changeColor = (data?.monthlyChange ?? 0) >= 0 ? colors.success : colors.danger
-  const sign        = (data?.monthlyChange ?? 0) >= 0 ? '+' : ''
+  // API returns totalValue (portfolio/stats) — support both field names
+  const totalWealth  = data?.totalWealth  ?? data?.totalValue     ?? 0
+  const monthlyPnl   = data?.monthlyChange ?? data?.totalPnl      ?? 0
+  const monthlyPct   = data?.monthlyPct   ?? data?.totalPnlPercent ?? 0
+
+  const changeColor = monthlyPnl >= 0 ? colors.success : colors.danger
+  const sign        = monthlyPnl >= 0 ? '+' : ''
 
   const breakdownEntries = Object.entries(data?.breakdown ?? {})
-    .filter(([, v]) => v > 0)
-    .sort(([, a], [, b]) => b - a)
+    .filter(([, v]) => (v ?? 0) > 0)
+    .sort(([, a], [, b]) => (b ?? 0) - (a ?? 0))
 
-  const total = data?.totalWealth ?? 0
+  const total = totalWealth
 
   return (
     <SafeAreaView style={s.safe}>
@@ -96,7 +105,7 @@ export default function DashboardScreen() {
                   <View style={s.heroChange}>
                     <View style={[s.changeBadge, { backgroundColor: changeColor + '18' }]}>
                       <Text style={{ color: changeColor, fontSize: fontSize.sm, fontWeight: '600' }}>
-                        {sign}{formatCurrency(data.monthlyChange)} ({sign}{data.monthlyPct.toFixed(2)}%)
+                        {sign}{formatCurrency(monthlyPnl)} ({sign}{monthlyPct.toFixed(2)}%)
                       </Text>
                     </View>
                     <Text style={s.changeSub}>ce mois</Text>
