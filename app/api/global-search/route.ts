@@ -1,13 +1,13 @@
-import { getUser } from '@/lib/mobile-auth'
 import { NextRequest, NextResponse } from 'next/server'
+import { getUser } from '@/lib/mobile-auth'
 
 
 import { prisma } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
-  const _mobileUser = await getUser(req as any)
-  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = _mobileUser.id
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const userId = user.id
 
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? ''
   if (q.length < 2) return NextResponse.json({ assets: [], transactions: [], goals: [] })

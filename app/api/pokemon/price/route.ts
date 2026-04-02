@@ -1,5 +1,5 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/mobile-auth'
-import { NextResponse } from 'next/server'
 
 
 import { prisma } from '@/lib/db'
@@ -84,12 +84,12 @@ async function discoverSealedPrice(name: string): Promise<{ id: string; price: n
 }
 
 // ─── POST /api/pokemon/price — refresh all item prices ───────────────────────
-export async function POST() {
-  const _mobileUser = await getUser(req as any)
-  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function POST(req: NextRequest) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const items = await prisma.pokemonItem.findMany({
-    where: { userId: _mobileUser.id },
+    where: { userId: user.id },
   })
 
   let updated = 0
@@ -131,9 +131,9 @@ export async function POST() {
 }
 
 // ─── GET /api/pokemon/price — fetch price for a single item on demand ─────────
-export async function GET(req: Request) {
-  const _mobileUser = await getUser(req as any)
-  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(req: NextRequest) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const cardId = searchParams.get('cardId')

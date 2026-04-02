@@ -1,5 +1,5 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { getUser } from '@/lib/mobile-auth'
-import { NextResponse } from 'next/server'
 
 
 
@@ -96,9 +96,9 @@ async function searchSealedViaPriceCharting(query: string) {
     }))
 }
 
-export async function GET(req: Request) {
-  const _mobileUser = await getUser(req as any)
-  if (!_mobileUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(req: NextRequest) {
+  const user = await getUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const query = searchParams.get('q')?.trim()
