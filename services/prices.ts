@@ -3,6 +3,11 @@ import { MOCK_PRICES } from './mock-data'
 
 const COINGECKO_KEY = process.env.COINGECKO_API_KEY
 
+// Alias : symboles incorrects → symboles Yahoo Finance corrects
+const SYMBOL_ALIASES: Record<string, string> = {
+  'IWPE.PA': 'WPEA.PA', // iShares MSCI World Swap PEA — vrai ticker Yahoo Finance
+}
+
 // ── Stocks & ETFs via Yahoo Finance (gratuit, sans limite) ───────────────────
 async function fetchYahoo(symbol: string, host: string): Promise<PriceData | null> {
   const res = await fetch(
@@ -30,10 +35,12 @@ async function fetchYahoo(symbol: string, host: string): Promise<PriceData | nul
 
 export async function getStockPrice(symbol: string): Promise<PriceData | null> {
   try {
+    const resolved = SYMBOL_ALIASES[symbol] ?? symbol
     // Try query1 first, then query2 as fallback (query2 often works better for European ETFs)
-    const result = await fetchYahoo(symbol, 'query1.finance.yahoo.com')
-      ?? await fetchYahoo(symbol, 'query2.finance.yahoo.com')
-    return result ?? MOCK_PRICES.find(p => p.symbol === symbol) ?? null
+    const result = await fetchYahoo(resolved, 'query1.finance.yahoo.com')
+      ?? await fetchYahoo(resolved, 'query2.finance.yahoo.com')
+    // Return with original symbol so it matches the holding in DB
+    return result ? { ...result, symbol } : MOCK_PRICES.find(p => p.symbol === symbol) ?? null
   } catch {
     return MOCK_PRICES.find(p => p.symbol === symbol) ?? null
   }

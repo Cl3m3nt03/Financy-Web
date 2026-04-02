@@ -53,7 +53,7 @@ const POPULAR_STOCKS: SearchResult[] = [
   { symbol: 'SGO.PA', name: 'Saint-Gobain',         exchange: 'Euronext Paris' },
   { symbol: 'WLN.PA', name: 'Worldline',            exchange: 'Euronext Paris' },
   // ETF World / PEA éligibles
-  { symbol: 'IWPE.PA', name: 'iShares MSCI World Swap PEA UCITS ETF EUR (Acc)', exchange: 'Euronext Paris', isin: 'IE0002XZSHO1' },
+  { symbol: 'WPEA.PA', name: 'iShares MSCI World Swap PEA UCITS ETF EUR (Acc)', exchange: 'Euronext Paris', isin: 'IE0002XZSHO1' },
   { symbol: 'IWDA.AS', name: 'iShares Core MSCI World UCITS ETF USD (Acc)',     exchange: 'Euronext Amsterdam', isin: 'IE00B4L5Y983' },
   { symbol: 'SWRD.PA', name: 'SPDR MSCI World UCITS ETF',                       exchange: 'Euronext Paris', isin: 'IE00BFY0GT14' },
   { symbol: 'MWRD.PA', name: 'iShares MSCI World UCITS ETF EUR Hedged (Acc)',   exchange: 'Euronext Paris', isin: 'IE00B441G979' },
