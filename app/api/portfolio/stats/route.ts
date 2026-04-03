@@ -3,35 +3,59 @@ import { prisma } from '@/lib/db'
 import { getUser } from '@/lib/mobile-auth'
 import { AssetBreakdown, PortfolioStats } from '@/types'
 import { MOCK_PORTFOLIO_STATS } from '@/services/mock-data'
+import { getStockPrice, getCryptoPrice, getCoinId } from '@/services/prices'
+
+const CRYPTO_SYMBOLS = new Set(['BTC', 'ETH', 'SOL', 'BNB', 'ADA', 'XRP', 'MATIC', 'DOT', 'AVAX', 'LINK'])
+const FINANCIAL_TYPES = new Set(['STOCK', 'CRYPTO', 'PEA', 'CTO'])
 
 export async function GET(req: NextRequest) {
   const user = await getUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const userId = user.id
-  const assets = await prisma.asset.findMany({ where: { userId } })
+  const assets = await prisma.asset.findMany({ where: { userId }, include: { holdings: true } })
 
   if (assets.length === 0) {
     return NextResponse.json(MOCK_PORTFOLIO_STATS)
   }
 
+  // Fetch live prices for financial assets with holdings
+  const financialAssets = assets.filter(a => FINANCIAL_TYPES.has(a.type) && a.holdings.length > 0)
+  const priceMap: Record<string, number> = {}
+  if (financialAssets.length > 0) {
+    const allSymbols = Array.from(new Set(financialAssets.flatMap(a => a.holdings.map(h => h.symbol))))
+    const priceResults = await Promise.all(
+      allSymbols.map(sym =>
+        CRYPTO_SYMBOLS.has(sym.toUpperCase())
+          ? getCryptoPrice(getCoinId(sym))
+          : getStockPrice(sym)
+      )
+    )
+    for (const p of priceResults) {
+      if (p) priceMap[p.symbol] = p.price
+    }
+  }
+
   const breakdown: AssetBreakdown = {
-    BANK_ACCOUNT: 0,
-    SAVINGS: 0,
-    REAL_ESTATE: 0,
-    STOCK: 0,
-    CRYPTO: 0,
-    PEA: 0,
-    CTO: 0,
-    OTHER: 0,
+    BANK_ACCOUNT: 0, SAVINGS: 0, REAL_ESTATE: 0,
+    STOCK: 0, CRYPTO: 0, PEA: 0, CTO: 0, OTHER: 0,
   }
 
   let totalValue = 0
   for (const asset of assets) {
-    totalValue += asset.value
+    let value = asset.value
+    // Override with live price × quantity for financial assets
+    if (FINANCIAL_TYPES.has(asset.type) && asset.holdings.length > 0) {
+      const liveValue = asset.holdings.reduce((sum, h) => {
+        const price = priceMap[h.symbol] ?? h.avgBuyPrice
+        return sum + price * h.quantity
+      }, 0)
+      if (liveValue > 0) value = liveValue
+    }
+    totalValue += value
     const key = asset.type as keyof AssetBreakdown
-    if (key in breakdown) breakdown[key] += asset.value
-    else breakdown.OTHER += asset.value
+    if (key in breakdown) breakdown[key] += value
+    else breakdown.OTHER += value
   }
 
   // Auto-snapshot: at most once per day
