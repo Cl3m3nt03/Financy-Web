@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, RefreshControl, Animated, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, RefreshControl, Animated, ActivityIndicator, TouchableOpacity, Modal, Dimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, fontSize, radius, spacing } from '@/constants/theme'
 import { apiFetch, formatCurrency, formatPercent } from '@/lib/api'
-import Svg, { Circle, G, Path } from 'react-native-svg'
+import Svg, { Circle, G, Path, Line, Text as SvgText } from 'react-native-svg'
 
 interface Holding {
   id:          string
@@ -115,8 +115,179 @@ function PnlRow({ holding, price }: { holding: Holding; price?: PriceData }) {
   )
 }
 
+// ── Couleurs des lignes du graphe comparatif ────────────────────────────────
+const LINE_COLORS = ['#C9A84C', '#3B82F6', '#10B981', '#8B5CF6']
+
+interface CompareSeries {
+  label: string
+  data:  { date: string; value: number }[]
+}
+
+function HoldingDetailSheet({
+  holding, price, invested, onClose,
+}: {
+  holding:  Holding
+  price?:   { price: number; changePct24h: number }
+  invested: number
+  onClose:  () => void
+}) {
+  const currentPrice  = price?.price ?? holding.avgBuyPrice
+  const currentValue  = currentPrice * holding.quantity
+  const pnl           = currentValue - invested
+  const pnlPct        = invested > 0 ? (pnl / invested) * 100 : 0
+  const isPos         = pnl >= 0
+
+  // Fetch compare data — since first purchase (approximated from avgBuyPrice date, use 1y ago as fallback)
+  const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+  const { data: compareData, isLoading } = useQuery<Record<string, CompareSeries>>({
+    queryKey: ['compare', holding.symbol, invested],
+    queryFn:  () => apiFetch(
+      `/api/performance/compare?symbol=${encodeURIComponent(holding.symbol)}&since=${since}&amount=${invested.toFixed(2)}`
+    ),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const W   = Dimensions.get('window').width - spacing.md * 4
+  const H   = 160
+  const entries = Object.entries(compareData ?? {})
+
+  // Build SVG paths
+  const allValues = entries.flatMap(([, s]) => s.data.map(d => d.value))
+  const maxV = Math.max(...allValues, invested * 1.1) * 1.02
+  const minV = Math.min(...allValues, invested * 0.9) * 0.98
+  const range = maxV - minV || 1
+  const maxLen = Math.max(...entries.map(([, s]) => s.data.length), 1)
+
+  const toX = (i: number, len: number) => (i / Math.max(len - 1, 1)) * W
+  const toY = (v: number) => H - ((v - minV) / range) * H
+
+  return (
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <View style={ds.sheet}>
+          <View style={ds.handle} />
+
+          {/* Header */}
+          <View style={ds.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={ds.symbol}>{holding.symbol}</Text>
+              <Text style={ds.name} numberOfLines={1}>{holding.name}</Text>
+            </View>
+            <TouchableOpacity onPress={onClose} style={ds.closeBtn}>
+              <Ionicons name="close" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Stats */}
+          <View style={ds.statsRow}>
+            <View style={ds.stat}>
+              <Text style={ds.statLabel}>Valeur actuelle</Text>
+              <Text style={ds.statValue}>{formatCurrency(currentValue)}</Text>
+            </View>
+            <View style={ds.stat}>
+              <Text style={ds.statLabel}>Investi</Text>
+              <Text style={ds.statValue}>{formatCurrency(invested)}</Text>
+            </View>
+            <View style={ds.stat}>
+              <Text style={ds.statLabel}>P&L</Text>
+              <Text style={[ds.statValue, { color: isPos ? colors.success : colors.danger }]}>
+                {isPos ? '+' : ''}{formatCurrency(pnl)}
+              </Text>
+            </View>
+            <View style={ds.stat}>
+              <Text style={ds.statLabel}>Perf</Text>
+              <Text style={[ds.statValue, { color: isPos ? colors.success : colors.danger }]}>
+                {isPos ? '+' : ''}{pnlPct.toFixed(2)}%
+              </Text>
+            </View>
+          </View>
+
+          {/* Chart */}
+          <View style={{ marginTop: 16 }}>
+            <Text style={{ color: colors.textMuted, fontSize: fontSize.xs, marginBottom: 8 }}>
+              Performance comparée — même montant investi · 12 mois
+            </Text>
+
+            {isLoading ? (
+              <ActivityIndicator color={colors.accent} style={{ height: H }} />
+            ) : entries.length === 0 ? (
+              <View style={{ height: H, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: colors.textMuted, fontSize: fontSize.xs }}>Données indisponibles</Text>
+              </View>
+            ) : (
+              <Svg width={W} height={H + 20}>
+                {/* Baseline (invested amount) */}
+                <Line
+                  x1={0} y1={toY(invested)} x2={W} y2={toY(invested)}
+                  stroke={colors.border} strokeWidth="1" strokeDasharray="4,4"
+                />
+                {/* Curves */}
+                {entries.map(([sym, series], idx) => {
+                  const d = series.data
+                    .map((p, i) => `${i === 0 ? 'M' : 'L'}${toX(i, d?.length ?? 1).toFixed(1)},${toY(p.value).toFixed(1)}`)
+                    .join(' ')
+                  return (
+                    <Path
+                      key={sym}
+                      d={d}
+                      fill="none"
+                      stroke={LINE_COLORS[idx % LINE_COLORS.length]}
+                      strokeWidth={idx === 0 ? 2.5 : 1.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity={idx === 0 ? 1 : 0.7}
+                    />
+                  )
+                })}
+                {/* X labels */}
+                {entries[0]?.data.filter((_, i, arr) =>
+                  i === 0 || i === Math.floor(arr.length / 2) || i === arr.length - 1
+                ).map((p, i, arr) => (
+                  <SvgText
+                    key={i}
+                    x={i === 0 ? 0 : i === 1 ? W / 2 : W}
+                    y={H + 14}
+                    fontSize="9"
+                    fill={colors.textMuted}
+                    textAnchor={i === 0 ? 'start' : i === 1 ? 'middle' : 'end'}
+                  >
+                    {new Date(p.date).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })}
+                  </SvgText>
+                ))}
+              </Svg>
+            )}
+          </View>
+
+          {/* Légende */}
+          {entries.length > 0 && (
+            <View style={ds.legend}>
+              {entries.map(([sym, series], idx) => {
+                const last    = series.data[series.data.length - 1]?.value ?? invested
+                const perfPct = ((last - invested) / invested) * 100
+                const pos     = perfPct >= 0
+                return (
+                  <View key={sym} style={ds.legendItem}>
+                    <View style={[ds.legendDot, { backgroundColor: LINE_COLORS[idx % LINE_COLORS.length] }]} />
+                    <Text style={ds.legendLabel}>{series.label}</Text>
+                    <Text style={[ds.legendPerf, { color: pos ? colors.success : colors.danger }]}>
+                      {pos ? '+' : ''}{perfPct.toFixed(1)}%
+                    </Text>
+                    <Text style={ds.legendValue}>{formatCurrency(last)}</Text>
+                  </View>
+                )
+              })}
+            </View>
+          )}
+        </View>
+      </View>
+    </Modal>
+  )
+}
+
 export default function PortfolioScreen() {
-  const [activeTab, setActiveTab] = useState<'positions' | 'sectors' | 'dividends'>('positions')
+  const [activeTab, setActiveTab]       = useState<'positions' | 'sectors' | 'dividends'>('positions')
+  const [selectedHolding, setSelected]  = useState<{ holding: Holding; invested: number } | null>(null)
   const { data: assets, isLoading, refetch, isRefetching } = useQuery<Asset[]>({
     queryKey:        ['assets'],
     queryFn:         () => apiFetch('/api/assets'),
@@ -246,7 +417,13 @@ export default function PortfolioScreen() {
                   </View>
                   <View style={{ gap: 1, marginTop: 10 }}>
                     {asset.holdings.map(h => (
-                      <PnlRow key={h.id} holding={h} price={priceMap[h.symbol]} />
+                      <TouchableOpacity
+                        key={h.id}
+                        onPress={() => setSelected({ holding: h, invested: h.avgBuyPrice * h.quantity })}
+                        activeOpacity={0.75}
+                      >
+                        <PnlRow holding={h} price={priceMap[h.symbol]} />
+                      </TouchableOpacity>
                     ))}
                   </View>
                 </View>
@@ -466,9 +643,38 @@ export default function PortfolioScreen() {
           </View>
         )}
       </ScrollView>
+
+      {selectedHolding && (
+        <HoldingDetailSheet
+          holding={selectedHolding.holding}
+          price={priceMap[selectedHolding.holding.symbol]}
+          invested={selectedHolding.invested}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </SafeAreaView>
   )
 }
+
+// ── Styles du detail sheet ───────────────────────────────────────────────────
+const ds = StyleSheet.create({
+  sheet:     { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg, paddingBottom: 40 },
+  handle:    { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 },
+  header:    { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  symbol:    { color: colors.textPrimary, fontSize: fontSize.xl, fontWeight: '700', letterSpacing: -0.5 },
+  name:      { color: colors.textMuted, fontSize: fontSize.sm, marginTop: 2 },
+  closeBtn:  { width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
+  statsRow:  { flexDirection: 'row', backgroundColor: colors.surface2, borderRadius: radius.lg, padding: 12, gap: 4, marginBottom: 4 },
+  stat:      { flex: 1, alignItems: 'center' },
+  statLabel: { color: colors.textMuted, fontSize: 10, marginBottom: 3 },
+  statValue: { color: colors.textPrimary, fontSize: fontSize.sm, fontWeight: '700' },
+  legend:    { gap: 8, marginTop: 12 },
+  legendItem:{ flexDirection: 'row', alignItems: 'center', gap: 8 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendLabel:{ flex: 1, color: colors.textSecondary, fontSize: fontSize.xs },
+  legendPerf: { fontSize: fontSize.xs, fontWeight: '700', minWidth: 48, textAlign: 'right' },
+  legendValue:{ color: colors.textPrimary, fontSize: fontSize.xs, fontWeight: '600', minWidth: 72, textAlign: 'right' },
+})
 
 const s = StyleSheet.create({
   safe:   { flex: 1, backgroundColor: colors.background },
