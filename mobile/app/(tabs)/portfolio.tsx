@@ -52,7 +52,7 @@ const TYPE_ICONS: Record<string, { color: string; icon: IoniconsName }> = {
   CTO:    { color: '#A78BFA', icon: 'stats-chart-outline' },
 }
 
-function PnlRow({ holding, price }: { holding: Holding; price?: PriceData }) {
+function PnlRow({ holding, price, onPress }: { holding: Holding; price?: PriceData; onPress?: () => void }) {
   const currentPrice = price?.price ?? holding.avgBuyPrice
   const invested     = holding.avgBuyPrice * holding.quantity
   const current      = currentPrice * holding.quantity
@@ -81,6 +81,7 @@ function PnlRow({ holding, price }: { holding: Holding; price?: PriceData }) {
   const cfg = TYPE_ICONS[holding.symbol?.includes('.') ? 'STOCK' : 'CRYPTO'] ?? { color: colors.accent, icon: 'trending-up-outline' as IoniconsName }
 
   return (
+    <TouchableOpacity onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress}>
     <Animated.View style={[s.holdingRow, { backgroundColor: flashColor }]}>
       <View style={s.holdingLeft}>
         <View style={[s.symbolBadge, { backgroundColor: cfg.color + '18' }]}>
@@ -112,6 +113,7 @@ function PnlRow({ holding, price }: { holding: Holding; price?: PriceData }) {
         )}
       </View>
     </Animated.View>
+    </TouchableOpacity>
   )
 }
 
@@ -417,13 +419,12 @@ export default function PortfolioScreen() {
                   </View>
                   <View style={{ gap: 1, marginTop: 10 }}>
                     {asset.holdings.map(h => (
-                      <TouchableOpacity
+                      <PnlRow
                         key={h.id}
+                        holding={h}
+                        price={priceMap[h.symbol]}
                         onPress={() => setSelected({ holding: h, invested: h.avgBuyPrice * h.quantity })}
-                        activeOpacity={0.75}
-                      >
-                        <PnlRow holding={h} price={priceMap[h.symbol]} />
-                      </TouchableOpacity>
+                      />
                     ))}
                   </View>
                 </View>
